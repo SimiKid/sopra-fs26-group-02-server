@@ -31,4 +31,6 @@ public class UserGetDTO {
 	public void setStatus(UserStatus status) {
 		this.status = status;
 	}
+
+	
 }

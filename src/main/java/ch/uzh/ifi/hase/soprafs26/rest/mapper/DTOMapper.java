@@ -18,6 +18,7 @@ import ch.uzh.ifi.hase.soprafs26.rest.dto.UserPostDTO;
  * Always created one mapper for getting information (GET) and one mapper for
  * creating information (POST).
  */
+
 @Mapper
 public interface DTOMapper {
 

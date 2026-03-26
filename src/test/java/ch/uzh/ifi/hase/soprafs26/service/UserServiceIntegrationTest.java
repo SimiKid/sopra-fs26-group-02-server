@@ -1,4 +1,5 @@
-/* package ch.uzh.ifi.hase.soprafs26.service;
+/* 
+package ch.uzh.ifi.hase.soprafs26.service;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,13 +14,7 @@ import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.repository.UserRepository;
 
 import static org.junit.jupiter.api.Assertions.*;
-*/
-/**
- * Test class for the UserResource REST resource.
- *
- * @see UserService
- */
-/* 
+
 @WebAppConfiguration
 @SpringBootTest
 public class UserServiceIntegrationTest {
