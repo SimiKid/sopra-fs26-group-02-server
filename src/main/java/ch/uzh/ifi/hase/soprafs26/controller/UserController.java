@@ -19,6 +19,8 @@ import java.util.List;
  * The controller will receive the request and delegate the execution to the
  * UserService and finally return the result.
  */
+
+
 @RestController
 public class UserController {
 
@@ -27,6 +29,8 @@ public class UserController {
 	UserController(UserService userService) {
 		this.userService = userService;
 	}
+
+/* Template code: get all users
 
 	@GetMapping("/users")
 	@ResponseStatus(HttpStatus.OK)
@@ -42,6 +46,7 @@ public class UserController {
 		}
 		return userGetDTOs;
 	}
+*/
 
 	@PostMapping("/users")
 	@ResponseStatus(HttpStatus.CREATED)

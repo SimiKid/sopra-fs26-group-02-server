@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import ch.uzh.ifi.hase.soprafs26.constant.UserStatus;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 
 /**
  * Internal User Representation
@@ -16,6 +17,7 @@ import java.io.Serializable;
  * - unique = true -> this value must be unqiue across the database -> composes
  * the primary key
  */
+
 @Entity
 @Table(name = "users")
 public class User implements Serializable {
@@ -26,17 +28,23 @@ public class User implements Serializable {
 	@GeneratedValue
 	private Long id;
 
-	@Column(nullable = false)
-	private String name;
-
 	@Column(nullable = false, unique = true)
 	private String username;
+
+	@Column(nullable = false)
+	private String password;
 
 	@Column(nullable = false, unique = true)
 	private String token;
 
+	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
 	private UserStatus status;
+
+	@Column(nullable = false)
+	private LocalDateTime creationDate;
+	
+	private Long  currentGameSessionId;
 
 	public Long getId() {
 		return id;
@@ -46,12 +54,12 @@ public class User implements Serializable {
 		this.id = id;
 	}
 
-	public String getName() {
-		return name;
+	public String getPassword() {
+		return password;
 	}
 
-	public void setName(String name) {
-		this.name = name;
+	public void setPassword(String password) {
+		this.password = password;
 	}
 
 	public String getUsername() {
@@ -77,4 +85,20 @@ public class User implements Serializable {
 	public void setStatus(UserStatus status) {
 		this.status = status;
 	}
+
+	public LocalDateTime getCreationDate() {
+		return creationDate;
+	}
+
+	public void setCreationDate(LocalDateTime creationDate) {
+		this.creationDate = creationDate;
+	}
+
+	public long getCurrentGameSessionId() {
+		return currentGameSessionId;
+	}
+
+	public void setCurrentGameSessionId(long currentGameSessionId) {
+		this.currentGameSessionId = currentGameSessionId;
+	}	
 }
