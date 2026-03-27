@@ -1,4 +1,3 @@
-/*
 package ch.uzh.ifi.hase.soprafs26.controller;
 
 import tools.jackson.core.JacksonException;
@@ -21,13 +20,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Collections;
-import java.util.List;
-
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.BDDMockito.given;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -43,44 +37,23 @@ public class UserControllerTest {
 	private UserService userService;
 
 	@Test
-	public void givenUsers_whenGetUsers_thenReturnJsonArray() throws Exception {
-		// given
-		User user = new User();
-		user.setUsername("firstname@lastname");
-		user.setStatus(UserStatus.OFFLINE);
-
-		List<User> allUsers = Collections.singletonList(user);
-
-		// this mocks the UserService -> we define above what the userService should
-		// return when getUsers() is called
-		given(userService.getUsers()).willReturn(allUsers);
-
-		// when
-		MockHttpServletRequestBuilder getRequest = get("/users").contentType(MediaType.APPLICATION_JSON);
-
-		// then
-		mockMvc.perform(getRequest).andExpect(status().isOk())
-				.andExpect(jsonPath("$", hasSize(1)))
-				.andExpect(jsonPath("$[0].username", is(user.getUsername())))
-				.andExpect(jsonPath("$[0].status", is(user.getStatus().toString())));
-	}
-
-	@Test
 	public void createUser_validInput_userCreated() throws Exception {
 		// given
 		User user = new User();
 		user.setId(1L);
 		user.setUsername("testUsername");
+		user.setPassword("testPassword");
 		user.setToken("1");
 		user.setStatus(UserStatus.ONLINE);
 
 		UserPostDTO userPostDTO = new UserPostDTO();
 		userPostDTO.setUsername("testUsername");
+		userPostDTO.setPassword("testPassword");
 
 		given(userService.createUser(Mockito.any())).willReturn(user);
 
 		// when/then -> do the request + validate the result
-		MockHttpServletRequestBuilder postRequest = post("/users")
+		MockHttpServletRequestBuilder postRequest = post("/register")
 				.contentType(MediaType.APPLICATION_JSON)
 				.content(asJsonString(userPostDTO));
 
@@ -101,5 +74,45 @@ public class UserControllerTest {
 					String.format("The request body could not be created.%s", e.toString()));
 		}
 	}
+
+	@Test
+	public void createUser_invalidInput_duplicateUsername() throws Exception {
+
+		// given
+		UserPostDTO userPostDTO = new UserPostDTO();
+		userPostDTO.setUsername("testUsername");
+		userPostDTO.setPassword("testPassword");
+
+		given(userService.createUser(Mockito.any()))
+		.willThrow(new ResponseStatusException(HttpStatus.CONFLICT, "Username is not unique."));
+
+		// when
+		MockHttpServletRequestBuilder postRequest = post("/register")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(asJsonString(userPostDTO));
+
+		// then
+		mockMvc.perform(postRequest)
+				.andExpect(status().isConflict());
+	}
+
+	@Test
+	public void createUser_invalidInput_emptyUsername() throws Exception {
+		// given
+		UserPostDTO userPostDTO = new UserPostDTO();
+		userPostDTO.setUsername("");
+		userPostDTO.setPassword("testPassword");
+
+		given(userService.createUser(Mockito.any()))
+		.willThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username and password must not be empty"));
+
+		// when
+		MockHttpServletRequestBuilder postRequest = post("/register")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(asJsonString(userPostDTO));
+
+		// then
+		mockMvc.perform(postRequest)
+				.andExpect(status().isBadRequest());
+	}
 }
-*/

@@ -94,11 +94,11 @@ public class User implements Serializable {
 		this.creationDate = creationDate;
 	}
 
-	public long getCurrentGameSessionId() {
+	public Long getCurrentGameSessionId() {
 		return currentGameSessionId;
 	}
 
-	public void setCurrentGameSessionId(long currentGameSessionId) {
+	public void setCurrentGameSessionId(Long currentGameSessionId) {
 		this.currentGameSessionId = currentGameSessionId;
 	}	
 }

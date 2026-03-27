@@ -30,25 +30,25 @@ public class UserController {
 		this.userService = userService;
 	}
 
-/* Template code: get all users
+/* template code, may be deleted in the future if not needed
+@GetMapping("/users")
+@ResponseStatus(HttpStatus.OK)
+@ResponseBody
+public List<UserGetDTO> getAllUsers() {
+	// fetch all users in the internal representation
+	List<User> users = userService.getUsers();
+	List<UserGetDTO> userGetDTOs = new ArrayList<>();
 
-	@GetMapping("/users")
-	@ResponseStatus(HttpStatus.OK)
-	@ResponseBody
-	public List<UserGetDTO> getAllUsers() {
-		// fetch all users in the internal representation
-		List<User> users = userService.getUsers();
-		List<UserGetDTO> userGetDTOs = new ArrayList<>();
-
-		// convert each user to the API representation
-		for (User user : users) {
-			userGetDTOs.add(DTOMapper.INSTANCE.convertEntityToUserGetDTO(user));
-		}
-		return userGetDTOs;
+	// convert each user to the API representation
+	for (User user : users) {
+		userGetDTOs.add(DTOMapper.INSTANCE.convertEntityToUserGetDTO(user));
 	}
+	return userGetDTOs;
+}
 */
 
-	@PostMapping("/users")
+
+	@PostMapping("/register")
 	@ResponseStatus(HttpStatus.CREATED)
 	@ResponseBody
 	public UserGetDTO createUser(@RequestBody UserPostDTO userPostDTO) {
