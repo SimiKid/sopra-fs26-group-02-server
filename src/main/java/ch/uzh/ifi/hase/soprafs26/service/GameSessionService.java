@@ -22,8 +22,8 @@ import java.util.Random;
 /**
  * Game Session Service
  * This class is the "worker" and responsible for all functionality related to
- * the user
- * The result will be passed back
+ * game sessions, such as creating new sessions, generating unique game codes,
+ * and retrieving existing sessions. The result will be passed back
  * to the caller.
  */
 @Service
@@ -45,8 +45,8 @@ public class GameSessionService {
 
 
 	public List<GameSession> getGameSessions() {
-    return this.gameSessionRepository.findAll();
-}
+		return this.gameSessionRepository.findAll();
+	}
 
 	// The for-loop tries to create a unique game code. If it fails after MAX_ATTEMPTS, it will throw an exception.
 	public GameSession createGameSession(GameSession newGameSession) {
@@ -66,16 +66,19 @@ public class GameSessionService {
 				gameSessionRepository.flush(); // forces unique-constraint check
 				return saved;
 			} catch (DataIntegrityViolationException e) {
-				log.warn("Generated game code {} already exists. Retrying", code);
+				log.warn("Generated game code already exists. Retrying");
 			}
 		}
-		throw new IllegalStateException("Could not generate unique game code.");
+		throw new ResponseStatusException(
+				HttpStatus.SERVICE_UNAVAILABLE,
+				"Could not generate unique game code. Please try again."
+		);
 	}
 
 	public GameSession getByGameCode(String gameCode) {
 		GameSession gameSession = gameSessionRepository.findByGameCode(gameCode);
 		if (gameSession == null) {
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found or expired.");
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found.");
 		}
 		return gameSession;
 	}
