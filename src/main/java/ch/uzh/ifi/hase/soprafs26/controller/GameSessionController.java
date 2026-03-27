@@ -9,8 +9,6 @@ import ch.uzh.ifi.hase.soprafs26.rest.dto.GameSessionPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs26.service.GameSessionService;
 
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * GameSession Controller
