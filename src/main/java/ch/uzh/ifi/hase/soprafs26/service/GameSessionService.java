@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -22,8 +23,8 @@ import java.util.Random;
 /**
  * Game Session Service
  * This class is the "worker" and responsible for all functionality related to
- * game sessions, such as creating new sessions, generating unique game codes,
- * and retrieving existing sessions. The result will be passed back
+ * the user
+ * The result will be passed back
  * to the caller.
  */
 @Service
@@ -45,8 +46,8 @@ public class GameSessionService {
 
 
 	public List<GameSession> getGameSessions() {
-		return this.gameSessionRepository.findAll();
-	}
+    return this.gameSessionRepository.findAll();
+}
 
 	// The for-loop tries to create a unique game code. If it fails after MAX_ATTEMPTS, it will throw an exception.
 	public GameSession createGameSession(GameSession newGameSession) {
@@ -66,19 +67,16 @@ public class GameSessionService {
 				gameSessionRepository.flush(); // forces unique-constraint check
 				return saved;
 			} catch (DataIntegrityViolationException e) {
-				log.warn("Generated game code already exists. Retrying");
+				log.warn("Generated game code {} already exists. Retrying", code);
 			}
 		}
-		throw new ResponseStatusException(
-				HttpStatus.SERVICE_UNAVAILABLE,
-				"Could not generate unique game code. Please try again."
-		);
+		throw new IllegalStateException("Could not generate unique game code.");
 	}
 
 	public GameSession getByGameCode(String gameCode) {
 		GameSession gameSession = gameSessionRepository.findByGameCode(gameCode);
 		if (gameSession == null) {
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found.");
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found or expired.");
 		}
 		return gameSession;
 	}
@@ -91,4 +89,16 @@ public class GameSessionService {
         }
         return sb.toString();
     }
+
+	// This method schedules a cleanup of game sessions that are still waiting for a second player after 10 minutes.
+	// It finds all game sessions where player2Id is null and createdAt is more than 10 minutes ago, and deletes them from the repository.
+	@Scheduled(fixedRate = 60000) // runs every minute
+	public void cleanupExpiredGameSessions() {
+		LocalDateTime cutoff = LocalDateTime.now().minusMinutes(10);
+		List<GameSession> expiredSessions = gameSessionRepository.findByPlayer2IdIsNullAndCreatedAtBefore(cutoff);
+		for (GameSession session : expiredSessions) {
+			log.info("Cleaning up expired game session with code {}", session.getGameCode());
+			gameSessionRepository.delete(session);
+		}
+	}
 }
