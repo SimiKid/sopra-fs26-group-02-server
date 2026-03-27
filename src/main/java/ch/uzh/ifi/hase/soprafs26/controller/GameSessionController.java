@@ -9,6 +9,8 @@ import ch.uzh.ifi.hase.soprafs26.rest.dto.GameSessionPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs26.service.GameSessionService;
 
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * GameSession Controller
@@ -28,7 +30,7 @@ public class GameSessionController {
 		this.gameSessionService = gameSessionService;
 	}
 
-    @PostMapping("/games")
+    @PostMapping("/game")
     @ResponseStatus(HttpStatus.CREATED)
     @ResponseBody
     public GameSessionGetDTO createGameSession(@RequestBody GameSessionPostDTO gameSessionPostDTO) {
@@ -40,7 +42,7 @@ public class GameSessionController {
         return DTOMapper.INSTANCE.convertEntityToGameSessionGetDTO(createdGameSession);
     }
 
-    @GetMapping("/games/{gameCode}")
+    @GetMapping("/game/{gameCode}")
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
     public GameSessionGetDTO getGameSessionByCode(@PathVariable String gameCode) {
