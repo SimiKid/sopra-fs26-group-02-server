@@ -14,7 +14,7 @@ public class GameSession implements Serializable {
     @GeneratedValue
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true, length = 6)
     private String gameCode;
 
     @Enumerated(EnumType.STRING)
