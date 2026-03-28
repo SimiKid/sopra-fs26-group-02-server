@@ -7,10 +7,9 @@ import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
+import ch.uzh.ifi.hase.soprafs26.service.AuthenticationService;
 import ch.uzh.ifi.hase.soprafs26.service.UserService;
 
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * User Controller
@@ -25,30 +24,32 @@ import java.util.List;
 public class UserController {
 
 	private final UserService userService;
+	private final AuthenticationService authenticationService;
 
-	UserController(UserService userService) {
+	UserController(UserService userService, AuthenticationService authenticationService) {
 		this.userService = userService;
+		this.authenticationService = authenticationService;
 	}
 
-/* Template code: get all users
+/* template code, may be deleted in the future if not needed
+@GetMapping("/users")
+@ResponseStatus(HttpStatus.OK)
+@ResponseBody
+public List<UserGetDTO> getAllUsers() {
+	// fetch all users in the internal representation
+	List<User> users = userService.getUsers();
+	List<UserGetDTO> userGetDTOs = new ArrayList<>();
 
-	@GetMapping("/users")
-	@ResponseStatus(HttpStatus.OK)
-	@ResponseBody
-	public List<UserGetDTO> getAllUsers() {
-		// fetch all users in the internal representation
-		List<User> users = userService.getUsers();
-		List<UserGetDTO> userGetDTOs = new ArrayList<>();
-
-		// convert each user to the API representation
-		for (User user : users) {
-			userGetDTOs.add(DTOMapper.INSTANCE.convertEntityToUserGetDTO(user));
-		}
-		return userGetDTOs;
+	// convert each user to the API representation
+	for (User user : users) {
+		userGetDTOs.add(DTOMapper.INSTANCE.convertEntityToUserGetDTO(user));
 	}
+	return userGetDTOs;
+}
 */
 
-	@PostMapping("/users")
+
+	@PostMapping("/register")
 	@ResponseStatus(HttpStatus.CREATED)
 	@ResponseBody
 	public UserGetDTO createUser(@RequestBody UserPostDTO userPostDTO) {
@@ -60,4 +61,14 @@ public class UserController {
 		// convert internal representation of user back to API
 		return DTOMapper.INSTANCE.convertEntityToUserGetDTO(createdUser);
 	}
+
+	@PostMapping("/login")
+    @ResponseStatus(HttpStatus.OK)
+    @ResponseBody
+    public UserGetDTO loginUser(@RequestBody UserPostDTO userPostDTO) {
+        User userInput = DTOMapper.INSTANCE.convertUserPostDTOtoEntity(userPostDTO);
+        User loggedUser = authenticationService.loginUser(userInput);
+
+        return DTOMapper.INSTANCE.convertEntityToUserGetDTO(loggedUser);
+    }
 }

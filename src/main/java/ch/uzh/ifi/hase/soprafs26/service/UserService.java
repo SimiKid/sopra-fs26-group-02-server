@@ -12,7 +12,7 @@ import ch.uzh.ifi.hase.soprafs26.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.repository.UserRepository;
 
-import java.util.List;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
@@ -28,20 +28,28 @@ public class UserService {
 
 	private final Logger log = LoggerFactory.getLogger(UserService.class);
 
-	private final UserRepository userRepository;
+	private final UserRepository userRepository;	
 
 	public UserService(@Qualifier("userRepository") UserRepository userRepository) {
 		this.userRepository = userRepository;
 	}
+/* template code, connected to the template code in the UserController
 
 	public List<User> getUsers() {
 		return this.userRepository.findAll();
 	}
 
+*/
+
 	public User createUser(User newUser) {
 		newUser.setToken(UUID.randomUUID().toString());
-		newUser.setStatus(UserStatus.OFFLINE);
-		checkIfUserExists(newUser);
+		newUser.setStatus(UserStatus.ONLINE);
+		newUser.setCreationDate(LocalDateTime.now());
+		if (newUser.getUsername() == null || newUser.getUsername().isBlank() || 
+			newUser.getPassword() == null || newUser.getPassword().isBlank()) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username and password must not be empty");
+		}
+		checkIfUserExists(newUser);	
 		// saves the given entity but data is only persisted in the database once
 		// flush() is called
 		newUser = userRepository.save(newUser);
@@ -66,7 +74,7 @@ public class UserService {
 
 		String baseErrorMessage = "The %s provided %s not unique. Therefore, the user could not be created!";
 		if (userByUsername != null) {
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, String.format(baseErrorMessage, "username", "is"));
+			throw new ResponseStatusException(HttpStatus.CONFLICT, String.format(baseErrorMessage, "username", "is"));
 		}
 	}
 }
