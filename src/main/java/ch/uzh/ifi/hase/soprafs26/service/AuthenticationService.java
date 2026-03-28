@@ -33,4 +33,17 @@ public class AuthenticationService {
             return userByUsername;
 	}
     
+    public User authenticateByToken(String token) {
+    if (token == null || token.isEmpty()) {
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token is missing");
+    }
+    
+    User user = userRepository.findByToken(token);
+    
+    if (user == null) {
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
+    }
+    
+    return user;
+}
 }
