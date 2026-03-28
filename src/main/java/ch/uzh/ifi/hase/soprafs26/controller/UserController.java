@@ -7,10 +7,9 @@ import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
+import ch.uzh.ifi.hase.soprafs26.service.AuthenticationService;
 import ch.uzh.ifi.hase.soprafs26.service.UserService;
 
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * User Controller
@@ -25,9 +24,11 @@ import java.util.List;
 public class UserController {
 
 	private final UserService userService;
+	private final AuthenticationService authenticationService;
 
-	UserController(UserService userService) {
+	UserController(UserService userService, AuthenticationService authenticationService) {
 		this.userService = userService;
+		this.authenticationService = authenticationService;
 	}
 
 /* template code, may be deleted in the future if not needed
@@ -60,4 +61,14 @@ public List<UserGetDTO> getAllUsers() {
 		// convert internal representation of user back to API
 		return DTOMapper.INSTANCE.convertEntityToUserGetDTO(createdUser);
 	}
+
+	@PostMapping("/login")
+    @ResponseStatus(HttpStatus.OK)
+    @ResponseBody
+    public UserGetDTO loginUser(@RequestBody UserPostDTO userPostDTO) {
+        User userInput = DTOMapper.INSTANCE.convertUserPostDTOtoEntity(userPostDTO);
+        User loggedUser = authenticationService.loginUser(userInput);
+
+        return DTOMapper.INSTANCE.convertEntityToUserGetDTO(loggedUser);
+    }
 }

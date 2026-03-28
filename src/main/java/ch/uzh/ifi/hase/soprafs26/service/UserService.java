@@ -13,7 +13,6 @@ import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.repository.UserRepository;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -29,7 +28,7 @@ public class UserService {
 
 	private final Logger log = LoggerFactory.getLogger(UserService.class);
 
-	private final UserRepository userRepository;
+	private final UserRepository userRepository;	
 
 	public UserService(@Qualifier("userRepository") UserRepository userRepository) {
 		this.userRepository = userRepository;
@@ -50,7 +49,7 @@ public class UserService {
 			newUser.getPassword() == null || newUser.getPassword().isBlank()) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username and password must not be empty");
 		}
-		checkIfUserExists(newUser);
+		checkIfUserExists(newUser);	
 		// saves the given entity but data is only persisted in the database once
 		// flush() is called
 		newUser = userRepository.save(newUser);

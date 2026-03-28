@@ -7,6 +7,7 @@ import tools.jackson.databind.ObjectMapper;
 import ch.uzh.ifi.hase.soprafs26.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserPostDTO;
+import ch.uzh.ifi.hase.soprafs26.service.AuthenticationService;
 import ch.uzh.ifi.hase.soprafs26.service.UserService;
 
 import org.junit.jupiter.api.Test;
@@ -34,6 +35,9 @@ public class UserControllerTest {
 	private MockMvc mockMvc;
 
 	@MockitoBean
+	private AuthenticationService authenticationService;
+
+	@MockitoBean	
 	private UserService userService;
 
 	@Test
@@ -115,4 +119,55 @@ public class UserControllerTest {
 		mockMvc.perform(postRequest)
 				.andExpect(status().isBadRequest());
 	}
+
+	@Test
+	public void loginUser_validInput_userLoggedIn() throws Exception {
+		// given
+		User user = new User();
+		user.setId(1L);
+		user.setUsername("testUsername");
+		user.setPassword("testPassword");
+		user.setToken("1");
+		user.setStatus(UserStatus.ONLINE);
+
+		UserPostDTO userPostDTO = new UserPostDTO();
+		userPostDTO.setUsername("testUsername");
+		userPostDTO.setPassword("testPassword");
+
+		given(authenticationService.loginUser(Mockito.any())).willReturn(user);
+
+		// when/then -> do the request + validate the result
+		MockHttpServletRequestBuilder postRequest = post("/login")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(asJsonString(userPostDTO));
+
+		// then
+		mockMvc.perform(postRequest)
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.id", is(user.getId().intValue())))
+				.andExpect(jsonPath("$.username", is(user.getUsername())))
+				.andExpect(jsonPath("$.status", is(user.getStatus().toString())))
+				.andExpect(jsonPath("$.token", is(user.getToken())));
+	}
+
+	@Test
+	public void loginUser_invalidcredential() throws Exception {
+		// given
+		UserPostDTO userPostDTO = new UserPostDTO();
+		userPostDTO.setUsername("testUsername");
+		userPostDTO.setPassword("testPassword");
+
+		given(authenticationService.loginUser(Mockito.any()))
+		.willThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid username or password"));
+
+		// when
+		MockHttpServletRequestBuilder postRequest = post("/login")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(asJsonString(userPostDTO));
+
+		// then
+		mockMvc.perform(postRequest)
+				.andExpect(status().isUnauthorized());
+	}
+
 }
