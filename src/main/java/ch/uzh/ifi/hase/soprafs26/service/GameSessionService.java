@@ -23,7 +23,8 @@ import java.util.Random;
 /**
  * Game Session Service
  * This class is the "worker" and responsible for all functionality related to
- * the user
+ * game sessions, such as creating new sessions, generating unique game codes,
+ * and retrieving existing sessions.
  * The result will be passed back
  * to the caller.
  */
@@ -67,10 +68,13 @@ public class GameSessionService {
 				gameSessionRepository.flush(); // forces unique-constraint check
 				return saved;
 			} catch (DataIntegrityViolationException e) {
-				log.warn("Generated game code {} already exists. Retrying", code);
+				log.warn("Generated game code already exists. Retrying");
 			}
 		}
-		throw new IllegalStateException("Could not generate unique game code.");
+		throw new ResponseStatusException(
+				HttpStatus.SERVICE_UNAVAILABLE,
+				"Could not generate unique game code. Please try again."
+		);
 	}
 
 	public GameSession getByGameCode(String gameCode) {

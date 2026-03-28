@@ -43,7 +43,7 @@ public class GameSessionController {
     @GetMapping("/game/{gameCode}")
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
-    public GameSessionGetDTO getGameSessionByCode(@PathVariable String gameCode) {
+    public GameSessionGetDTO getGameSessionByCode(@PathVariable("gameCode") String gameCode) {
         GameSession gameSession = gameSessionService.getByGameCode(gameCode);
         return DTOMapper.INSTANCE.convertEntityToGameSessionGetDTO(gameSession);
     }
