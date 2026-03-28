@@ -77,5 +77,42 @@ public class AuthenticationServiceTest {
         // then
         assertThrows(ResponseStatusException.class, () -> authenticationService.loginUser(testUser));
     }   
+
+    @Test
+    public void authenticateByToken_validToken_success() {
+        // given
+        testUser.setToken("valid-token");
+        Mockito.when(userRepository.findByToken("valid-token")).thenReturn(testUser);
+
+        // when 
+        authenticationService.authenticateByToken("valid-token");
+
+        // then 
+        Mockito.verify(userRepository, Mockito.times(1)).findByToken("valid-token");
+        // Wenn keine Exception geworfen wurde, gilt der Test als bestanden.
+    }
+
+    @Test
+    public void authenticateByToken_invalidToken_throwsException() {
+        // given 
+        Mockito.when(userRepository.findByToken("invalid-token")).thenReturn(null);
+
+        // when & then 
+        assertThrows(ResponseStatusException.class, () -> {
+            authenticationService.authenticateByToken("invalid-token");
+        });
+    }
+
+    @Test
+    public void authenticateByToken_nullToken_throwsException() {
+        // given 
+        Mockito.when(userRepository.findByToken(null)).thenReturn(null);
+
+        // when & then
+        assertThrows(ResponseStatusException.class, () -> {
+            authenticationService.authenticateByToken(null);
+        });
+    }
+
 }
 
