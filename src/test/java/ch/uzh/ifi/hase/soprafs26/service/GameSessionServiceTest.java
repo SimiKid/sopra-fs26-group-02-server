@@ -9,6 +9,10 @@ import org.junit.jupiter.api.Test;
 import org.mockito.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -67,5 +71,38 @@ class GameSessionServiceTest {
         when(gameSessionRepository.findByGameCode("MISSING")).thenReturn(null);
 
         assertThrows(ResponseStatusException.class, () -> gameSessionService.getByGameCode("MISSING"));
+    }
+
+    @Test
+    void cleanupExpiredGameSessions_withExpiredWaitingSessions_deletesEachExpiredSession() {
+        GameSession expiredOne = new GameSession();
+        expiredOne.setGameCode("OLD001");
+        expiredOne.setCreatedAt(LocalDateTime.now().minusMinutes(15));
+
+        GameSession expiredTwo = new GameSession();
+        expiredTwo.setGameCode("OLD002");
+        expiredTwo.setCreatedAt(LocalDateTime.now().minusMinutes(12));
+
+        when(gameSessionRepository.findByPlayer2IdIsNullAndCreatedAtBefore(any(LocalDateTime.class)))
+                .thenReturn(List.of(expiredOne, expiredTwo));
+
+        gameSessionService.cleanupExpiredGameSessions();
+
+        verify(gameSessionRepository, times(1))
+                .findByPlayer2IdIsNullAndCreatedAtBefore(any(LocalDateTime.class));
+        verify(gameSessionRepository, times(1)).delete(expiredOne);
+        verify(gameSessionRepository, times(1)).delete(expiredTwo);
+    }
+
+    @Test
+    void cleanupExpiredGameSessions_withNoExpiredSessions_doesNotDeleteAnything() {
+        when(gameSessionRepository.findByPlayer2IdIsNullAndCreatedAtBefore(any(LocalDateTime.class)))
+                .thenReturn(Collections.emptyList());
+
+        gameSessionService.cleanupExpiredGameSessions();
+
+        verify(gameSessionRepository, times(1))
+                .findByPlayer2IdIsNullAndCreatedAtBefore(any(LocalDateTime.class));
+        verify(gameSessionRepository, never()).delete(any(GameSession.class));
     }
 }
