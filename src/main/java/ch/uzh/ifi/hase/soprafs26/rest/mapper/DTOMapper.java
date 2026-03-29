@@ -4,8 +4,11 @@ import org.mapstruct.*;
 import org.mapstruct.factory.Mappers;
 
 import ch.uzh.ifi.hase.soprafs26.entity.User;
+import ch.uzh.ifi.hase.soprafs26.entity.GameSession;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserPostDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.GameSessionGetDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.GameSessionPostDTO;
 
 /**
  * DTOMapper
@@ -24,8 +27,7 @@ public interface DTOMapper {
 
 	DTOMapper INSTANCE = Mappers.getMapper(DTOMapper.class);
 
-	@Mapping(source = "username", target = "username")
-	@Mapping(source = "password", target = "password")
+	@BeanMapping(unmappedTargetPolicy = ReportingPolicy.IGNORE) // ignore unmapped target properties until they are implemented
 	User convertUserPostDTOtoEntity(UserPostDTO userPostDTO);
 
 	@Mapping(source = "id", target = "id")
@@ -33,4 +35,16 @@ public interface DTOMapper {
 	@Mapping(source = "status", target = "status")
 	@Mapping(source = "token", target = "token")
 	UserGetDTO convertEntityToUserGetDTO(User user);
+
+	@BeanMapping(unmappedTargetPolicy = ReportingPolicy.IGNORE) // ignore unmapped target properties until they are implemented
+	GameSession convertGameSessionPostDTOtoEntity(GameSessionPostDTO gameSessionPostDTO);
+
+	@Mapping(source = "id", target = "id")
+	@Mapping(source = "gameCode", target = "gameCode")
+	@Mapping(source = "gameStatus", target = "gameStatus")
+	@Mapping(source = "player1Id", target = "player1Id")
+	@Mapping(source = "player2Id", target = "player2Id")
+	@Mapping(source = "activePlayerId", target = "activePlayerId")
+	@Mapping(source = "createdAt", target = "createdAt")
+	GameSessionGetDTO convertEntityToGameSessionGetDTO(GameSession gameSession);
 }
