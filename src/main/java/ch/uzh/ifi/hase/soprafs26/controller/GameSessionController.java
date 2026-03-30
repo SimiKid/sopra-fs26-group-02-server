@@ -4,10 +4,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import ch.uzh.ifi.hase.soprafs26.entity.GameSession;
+import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.GameSessionGetDTO;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.GameSessionPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs26.service.GameSessionService;
+import ch.uzh.ifi.hase.soprafs26.service.AuthenticationService;
 
 
 /**
@@ -22,29 +23,36 @@ import ch.uzh.ifi.hase.soprafs26.service.GameSessionService;
 @RestController
 public class GameSessionController {
 
-	private final GameSessionService gameSessionService;
+	private final AuthenticationService authenticationService;
+    private final GameSessionService gameSessionService;
 
-	GameSessionController(GameSessionService gameSessionService) {
+	GameSessionController(GameSessionService gameSessionService, AuthenticationService authenticationService) {
 		this.gameSessionService = gameSessionService;
+        this.authenticationService = authenticationService;
 	}
 
     @PostMapping("/game")
     @ResponseStatus(HttpStatus.CREATED)
     @ResponseBody
-    public GameSessionGetDTO createGameSession(@RequestBody GameSessionPostDTO gameSessionPostDTO) {
-		// convert API game session to internal representation
-        GameSession gameSessionInput = DTOMapper.INSTANCE.convertGameSessionPostDTOtoEntity(gameSessionPostDTO);
-		// create game session
-        GameSession createdGameSession = gameSessionService.createGameSession(gameSessionInput);
-		// convert internal representation of game session back to API
+    public GameSessionGetDTO createGameSession(@RequestHeader("Authorization") String token) {
+		User creator=authenticationService.authenticateByToken(token);
+        GameSession newGameSession = new GameSession();
+        newGameSession.setPlayer1Id(creator.getId());
+        GameSession createdGameSession = gameSessionService.createGameSession(newGameSession);    
         return DTOMapper.INSTANCE.convertEntityToGameSessionGetDTO(createdGameSession);
     }
 
     @GetMapping("/game/{gameCode}")
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
-    public GameSessionGetDTO getGameSessionByCode(@PathVariable("gameCode") String gameCode) {
+    public GameSessionGetDTO getGameSessionByCode(@PathVariable("gameCode") String gameCode,@RequestHeader("Authorization") String token) {
+        authenticationService.authenticateByToken(token);
         GameSession gameSession = gameSessionService.getByGameCode(gameCode);
         return DTOMapper.INSTANCE.convertEntityToGameSessionGetDTO(gameSession);
     }
 }
+	// Helper for protected endpoints (Task #76 - Session Management):
+	// To secure a endpoint, follow these two steps:
+	// 1. Add '@RequestHeader("Authorization") String token' as a method parameter.
+	// 2. Call 'authenticationService.authenticateByToken(token);' as the first line of the method.
+	// If the token is invalid or missing, an UNAUTHORIZED (401) exception will be thrown automatically.
