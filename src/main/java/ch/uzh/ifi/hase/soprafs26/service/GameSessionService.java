@@ -94,6 +94,15 @@ public class GameSessionService {
         return sb.toString();
     }
 
+	public boolean deleteByGameCode(String gameCode) {
+		GameSession gameSession = gameSessionRepository.findByGameCode(gameCode);
+		if (gameSession == null) {
+			return false;
+		}
+		gameSessionRepository.delete(gameSession);
+		return true;
+	}
+
 	// This method schedules a cleanup of game sessions that are still waiting for a second player after 10 minutes.
 	// It finds all game sessions where player2Id is null and createdAt is more than 10 minutes ago, and deletes them from the repository.
 	@Scheduled(fixedRate = 60000) // runs every minute

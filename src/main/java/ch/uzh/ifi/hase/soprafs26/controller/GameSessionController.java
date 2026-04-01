@@ -50,6 +50,16 @@ public class GameSessionController {
         GameSession gameSession = gameSessionService.getByGameCode(gameCode);
         return DTOMapper.INSTANCE.convertEntityToGameSessionGetDTO(gameSession);
     }
+
+@DeleteMapping("/game/{gameCode}")
+@ResponseStatus(HttpStatus.NO_CONTENT)
+public void deleteGameSession(@PathVariable("gameCode") String gameCode, @RequestHeader("Authorization") String token) {
+    authenticationService.authenticateByToken(token);
+    boolean deleted = gameSessionService.deleteByGameCode(gameCode);
+    if (!deleted) {
+        throw new org.springframework.web.server.ResponseStatusException(HttpStatus.NOT_FOUND, "Game session not found");
+    }
+}
 }
 	// Helper for protected endpoints (Task #76 - Session Management):
 	// To secure a endpoint, follow these two steps:
