@@ -5,10 +5,12 @@ import org.springframework.web.bind.annotation.*;
 
 import ch.uzh.ifi.hase.soprafs26.entity.GameSession;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
+import ch.uzh.ifi.hase.soprafs26.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.GameSessionGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs26.service.GameSessionService;
 import ch.uzh.ifi.hase.soprafs26.service.AuthenticationService;
+
 
 
 /**
@@ -50,6 +52,8 @@ public class GameSessionController {
         GameSession gameSession = gameSessionService.getByGameCode(gameCode);
         return DTOMapper.INSTANCE.convertEntityToGameSessionGetDTO(gameSession);
     }
+
+
 }
 	// Helper for protected endpoints (Task #76 - Session Management):
 	// To secure a endpoint, follow these two steps:
