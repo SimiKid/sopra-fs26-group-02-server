@@ -5,10 +5,12 @@ import org.springframework.web.bind.annotation.*;
 
 import ch.uzh.ifi.hase.soprafs26.entity.GameSession;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
+import ch.uzh.ifi.hase.soprafs26.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.GameSessionGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs26.service.GameSessionService;
 import ch.uzh.ifi.hase.soprafs26.service.AuthenticationService;
+
 
 
 /**
@@ -51,6 +53,7 @@ public class GameSessionController {
         return DTOMapper.INSTANCE.convertEntityToGameSessionGetDTO(gameSession);
     }
 
+<<<<<<< HEAD
 @DeleteMapping("/game/{gameCode}")
 @ResponseStatus(HttpStatus.NO_CONTENT)
 public void deleteGameSession(@PathVariable("gameCode") String gameCode, @RequestHeader("Authorization") String token) {
@@ -60,6 +63,9 @@ public void deleteGameSession(@PathVariable("gameCode") String gameCode, @Reques
         throw new org.springframework.web.server.ResponseStatusException(HttpStatus.NOT_FOUND, "Game session not found");
     }
 }
+=======
+
+>>>>>>> origin/US-07-Select-a-Wizard-Class
 }
 	// Helper for protected endpoints (Task #76 - Session Management):
 	// To secure a endpoint, follow these two steps:
