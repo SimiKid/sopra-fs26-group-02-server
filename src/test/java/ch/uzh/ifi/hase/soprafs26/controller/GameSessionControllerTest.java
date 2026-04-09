@@ -25,6 +25,7 @@ import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -254,5 +255,108 @@ public class GameSessionControllerTest {
             .andExpect(status().isBadRequest());
 
         verify(gameSessionService, never()).deleteByGameCode(Mockito.anyString());
+    }
+
+    @Test
+    public void joinGameSession_validToken_gameJoined() throws Exception {
+        // given
+        User joiner = new User();
+        joiner.setId(2L);
+        joiner.setToken("valid-token");
+
+        GameSession joinedGame = new GameSession();
+        joinedGame.setId(10L);
+        joinedGame.setGameCode("ABC123");
+        joinedGame.setGameStatus(GameStatus.CONFIGURING);
+        joinedGame.setPlayer1Id(1L);
+        joinedGame.setPlayer2Id(2L);
+        joinedGame.setActivePlayerId(1L);
+        joinedGame.setCreatedAt(LocalDateTime.of(2026, 4, 8, 10, 0));
+
+        given(authenticationService.authenticateByToken("valid-token")).willReturn(joiner);
+        given(gameSessionService.joinGameSession("ABC123", 2L)).willReturn(joinedGame);
+
+        // when
+        MockHttpServletRequestBuilder putRequest = put("/game/ABC123/join")
+            .header("Authorization", "valid-token");
+
+        // then
+        mockMvc.perform(putRequest)
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id", is(joinedGame.getId().intValue())))
+            .andExpect(jsonPath("$.gameCode", is("ABC123")))
+            .andExpect(jsonPath("$.gameStatus", is("CONFIGURING")))
+            .andExpect(jsonPath("$.player1Id", is(1)))
+            .andExpect(jsonPath("$.player2Id", is(2)))
+            .andExpect(jsonPath("$.activePlayerId", is(1)));
+    }
+
+    @Test
+    public void joinGameSession_invalidToken_unauthorized() throws Exception {
+        // given
+        given(authenticationService.authenticateByToken("invalid-token"))
+            .willThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or expired token"));
+
+        // when
+        MockHttpServletRequestBuilder putRequest = put("/game/ABC123/join")
+            .header("Authorization", "invalid-token");
+
+        // then
+        mockMvc.perform(putRequest)
+            .andExpect(status().isUnauthorized());
+
+        verify(gameSessionService, never()).joinGameSession(Mockito.anyString(), Mockito.anyLong());
+    }
+
+    @Test
+    public void joinGameSession_missingAuthorizationHeader_badRequest() throws Exception {
+        // when
+        MockHttpServletRequestBuilder putRequest = put("/game/ABC123/join");
+
+        // then
+        mockMvc.perform(putRequest)
+            .andExpect(status().isBadRequest());
+
+        verify(gameSessionService, never()).joinGameSession(Mockito.anyString(), Mockito.anyLong());
+    }
+
+    @Test
+    public void joinGameSession_gameNotFound_notFound() throws Exception {
+        // given
+        User joiner = new User();
+        joiner.setId(2L);
+        joiner.setToken("valid-token");
+
+        given(authenticationService.authenticateByToken("valid-token")).willReturn(joiner);
+        given(gameSessionService.joinGameSession("NOTFND", 2L))
+            .willThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found or expired."));
+
+        // when
+        MockHttpServletRequestBuilder putRequest = put("/game/NOTFND/join")
+            .header("Authorization", "valid-token");
+
+        // then
+        mockMvc.perform(putRequest)
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    public void joinGameSession_gameFull_conflict() throws Exception {
+        // given
+        User joiner = new User();
+        joiner.setId(2L);
+        joiner.setToken("valid-token");
+
+        given(authenticationService.authenticateByToken("valid-token")).willReturn(joiner);
+        given(gameSessionService.joinGameSession("ABC123", 2L))
+            .willThrow(new ResponseStatusException(HttpStatus.CONFLICT, "Game is already full."));
+
+        // when
+        MockHttpServletRequestBuilder putRequest = put("/game/ABC123/join")
+            .header("Authorization", "valid-token");
+
+        // then
+        mockMvc.perform(putRequest)
+            .andExpect(status().isConflict());
     }
 }

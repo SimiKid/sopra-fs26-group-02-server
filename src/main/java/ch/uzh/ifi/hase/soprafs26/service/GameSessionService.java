@@ -85,6 +85,39 @@ public class GameSessionService {
 		return gameCode;
 	}
 
+	public GameSession joinGameSession(String gameCode, Long player2Id) {
+		if (gameCode == null || gameCode.length() != 6) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid game code format.");
+		}
+
+		GameSession gameSession = gameSessionRepository.findByGameCode(gameCode);
+
+		if (gameSession == null) {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found or expired.");
+		}
+
+		if (gameSession.getGameStatus() != GameStatus.WAITING) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "Game is not accepting players.");
+		}
+
+		if (gameSession.getPlayer2Id() != null) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "Game is already full.");
+		}
+
+		if (gameSession.getPlayer1Id().equals(player2Id)) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "You cannot join your own game.");
+		}
+
+		gameSession.setPlayer2Id(player2Id);
+		gameSession.setGameStatus(GameStatus.CONFIGURING);
+
+		gameSession = gameSessionRepository.save(gameSession);
+		gameSessionRepository.flush();
+
+		log.info("Player {} joined game session {}", player2Id, gameCode);
+		return gameSession;
+	}
+
 	public boolean deleteByGameCode(String gameCode) {
 		GameSession gameSession = gameSessionRepository.findByGameCode(gameCode);
 		if (gameSession == null) {
