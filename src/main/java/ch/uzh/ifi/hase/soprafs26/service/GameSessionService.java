@@ -17,7 +17,7 @@ import ch.uzh.ifi.hase.soprafs26.constant.GameStatus;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Random;
+import java.util.UUID;
 
 
 /**
@@ -40,12 +40,6 @@ public class GameSessionService {
 		this.gameSessionRepository = gameSessionRepository;
 	}
 
-	private static final String SYMBOLS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-	private static final int CODE_LENGTH = 6;
-	private static final int MAX_ATTEMPTS = 20;
-    private static final Random rnd = new Random();
-
-
 	public List<GameSession> getGameSessions() {
     return this.gameSessionRepository.findAll();
 }
@@ -56,7 +50,7 @@ public class GameSessionService {
 		newGameSession.setCreatedAt(LocalDateTime.now());
 		newGameSession.setActivePlayerId(newGameSession.getPlayer1Id());
 
-		for (int i = 0; i < MAX_ATTEMPTS; i++) {
+		for (int i = 0; i < 5; i++) {
 			String code = createGameCode();
 			if (gameSessionRepository.existsByGameCode(code)) {
 				continue;
@@ -87,12 +81,9 @@ public class GameSessionService {
 
     // This method creates a random 6-character game code consisting of uppercase letters and digits.
 	private String createGameCode() {
-        StringBuilder sb = new StringBuilder(CODE_LENGTH);
-        for (int i = 0; i < CODE_LENGTH; i++) {
-            sb.append(SYMBOLS.charAt(rnd.nextInt(SYMBOLS.length())));
-        }
-        return sb.toString();
-    }
+		String gameCode = UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+		return gameCode;
+	}
 
 	public boolean deleteByGameCode(String gameCode) {
 		GameSession gameSession = gameSessionRepository.findByGameCode(gameCode);
