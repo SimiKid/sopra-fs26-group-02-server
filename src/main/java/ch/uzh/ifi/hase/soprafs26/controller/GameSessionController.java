@@ -51,7 +51,16 @@ public class GameSessionController {
         return DTOMapper.INSTANCE.convertEntityToGameSessionGetDTO(gameSession);
     }
 
-@DeleteMapping("/game/{gameCode}")
+@PutMapping("/game/{gameCode}/join")
+    @ResponseStatus(HttpStatus.OK)
+    @ResponseBody
+    public GameSessionGetDTO joinGameSession(@PathVariable("gameCode") String gameCode, @RequestHeader("Authorization") String token) {
+        User joiner = authenticationService.authenticateByToken(token);
+        GameSession updatedGameSession = gameSessionService.joinGameSession(gameCode, joiner.getId());
+        return DTOMapper.INSTANCE.convertEntityToGameSessionGetDTO(updatedGameSession);
+    }
+
+    @DeleteMapping("/game/{gameCode}")
 @ResponseStatus(HttpStatus.NO_CONTENT)
 public void deleteGameSession(@PathVariable("gameCode") String gameCode, @RequestHeader("Authorization") String token) {
     authenticationService.authenticateByToken(token);

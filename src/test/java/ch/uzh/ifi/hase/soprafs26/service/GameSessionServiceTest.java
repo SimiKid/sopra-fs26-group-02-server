@@ -95,6 +95,93 @@ class GameSessionServiceTest {
     }
 
     @Test
+    void joinGameSession_validInput_setsPlayer2AndStatusConfiguring() {
+        GameSession existing = new GameSession();
+        existing.setId(1L);
+        existing.setGameCode("ABC123");
+        existing.setGameStatus(GameStatus.WAITING);
+        existing.setPlayer1Id(1L);
+        existing.setPlayer2Id(null);
+
+        when(gameSessionRepository.findByGameCode("ABC123")).thenReturn(existing);
+        when(gameSessionRepository.save(any(GameSession.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        GameSession result = gameSessionService.joinGameSession("ABC123", 2L);
+
+        assertEquals(2L, result.getPlayer2Id());
+        assertEquals(GameStatus.CONFIGURING, result.getGameStatus());
+        verify(gameSessionRepository, times(1)).save(any(GameSession.class));
+        verify(gameSessionRepository, times(1)).flush();
+    }
+
+    @Test
+    void joinGameSession_invalidCodeFormat_throwsBadRequest() {
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> gameSessionService.joinGameSession("AB", 2L));
+        assertEquals(400, ex.getStatusCode().value());
+    }
+
+    @Test
+    void joinGameSession_nullCode_throwsBadRequest() {
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> gameSessionService.joinGameSession(null, 2L));
+        assertEquals(400, ex.getStatusCode().value());
+    }
+
+    @Test
+    void joinGameSession_gameNotFound_throwsNotFound() {
+        when(gameSessionRepository.findByGameCode("NOTFND")).thenReturn(null);
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> gameSessionService.joinGameSession("NOTFND", 2L));
+        assertEquals(404, ex.getStatusCode().value());
+    }
+
+    @Test
+    void joinGameSession_gameNotWaiting_throwsConflict() {
+        GameSession existing = new GameSession();
+        existing.setGameCode("ABC123");
+        existing.setGameStatus(GameStatus.BATTLE);
+        existing.setPlayer1Id(1L);
+
+        when(gameSessionRepository.findByGameCode("ABC123")).thenReturn(existing);
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> gameSessionService.joinGameSession("ABC123", 2L));
+        assertEquals(409, ex.getStatusCode().value());
+    }
+
+    @Test
+    void joinGameSession_gameAlreadyFull_throwsConflict() {
+        GameSession existing = new GameSession();
+        existing.setGameCode("ABC123");
+        existing.setGameStatus(GameStatus.WAITING);
+        existing.setPlayer1Id(1L);
+        existing.setPlayer2Id(3L);
+
+        when(gameSessionRepository.findByGameCode("ABC123")).thenReturn(existing);
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> gameSessionService.joinGameSession("ABC123", 2L));
+        assertEquals(409, ex.getStatusCode().value());
+    }
+
+    @Test
+    void joinGameSession_joiningOwnGame_throwsConflict() {
+        GameSession existing = new GameSession();
+        existing.setGameCode("ABC123");
+        existing.setGameStatus(GameStatus.WAITING);
+        existing.setPlayer1Id(1L);
+        existing.setPlayer2Id(null);
+
+        when(gameSessionRepository.findByGameCode("ABC123")).thenReturn(existing);
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> gameSessionService.joinGameSession("ABC123", 1L));
+        assertEquals(409, ex.getStatusCode().value());
+    }
+
+    @Test
     void cleanupExpiredGameSessions_withNoExpiredSessions_doesNotDeleteAnything() {
         when(gameSessionRepository.findByPlayer2IdIsNullAndCreatedAtBefore(any(LocalDateTime.class)))
                 .thenReturn(Collections.emptyList());
