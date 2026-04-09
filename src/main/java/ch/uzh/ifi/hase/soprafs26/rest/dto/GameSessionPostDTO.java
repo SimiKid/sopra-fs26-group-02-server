@@ -1,6 +1,11 @@
 package ch.uzh.ifi.hase.soprafs26.rest.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
+@Schema(description = "DTO for creating a new game session")
 public class GameSessionPostDTO {
+
+    @Schema(description = "User ID of the player creating the game", example = "1")
     private Long player1Id;
 
     public Long getPlayer1Id() {
