@@ -13,7 +13,10 @@ import org.springframework.web.server.ResponseStatusException;
 
 import ch.uzh.ifi.hase.soprafs26.entity.GameSession;
 import ch.uzh.ifi.hase.soprafs26.repository.GameSessionRepository;
+import ch.uzh.ifi.hase.soprafs26.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs26.constant.GameStatus;
+import ch.uzh.ifi.hase.soprafs26.constant.WizardClass;
+import ch.uzh.ifi.hase.soprafs26.entity.Player;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -35,9 +38,11 @@ public class GameSessionService {
 	private final Logger log = LoggerFactory.getLogger(GameSessionService.class);
 
 	private final GameSessionRepository gameSessionRepository;
+	private final PlayerRepository playerRepository;
 
-	public GameSessionService(@Qualifier("gameSessionRepository") GameSessionRepository gameSessionRepository) {
+	public GameSessionService(@Qualifier("gameSessionRepository") GameSessionRepository gameSessionRepository, @Qualifier("playerRepository") PlayerRepository playerRepository) {
 		this.gameSessionRepository = gameSessionRepository;
+		this.playerRepository = playerRepository;
 	}
 
 	private static final String SYMBOLS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -104,5 +109,24 @@ public class GameSessionService {
 			log.info("Cleaning up expired game session with code {}", session.getGameCode());
 			gameSessionRepository.delete(session);
 		}
+	}
+
+	public Player saveWizardClass(String gameCode, Long userId, String wizardClassName) {
+		GameSession gameSession = getByGameCode(gameCode);
+
+		if (gameSession.getGameStatus() != GameStatus.CONFIGURING) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Game is not in configuration phase.");
+		}
+		
+		if (!userId.equals(gameSession.getPlayer1Id()) && !userId.equals(gameSession.getPlayer2Id())) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not part of this game session.");
+		}
+		
+		Player player = playerRepository.findByUserId(userId);
+		WizardClass wc = WizardClass.valueOf(wizardClassName);	
+		player.setWizardClass(wc);
+		player.setHp((int)(100 * wc.getHpMultiplier()));
+		
+		return playerRepository.save(player);
 	}
 }
