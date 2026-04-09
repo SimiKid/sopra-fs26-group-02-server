@@ -10,6 +10,11 @@ import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs26.service.AuthenticationService;
 import ch.uzh.ifi.hase.soprafs26.service.UserService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 
 /**
  * User Controller
@@ -21,6 +26,7 @@ import ch.uzh.ifi.hase.soprafs26.service.UserService;
 
 
 @RestController
+@Tag(name = "User", description = "User registration and authentication endpoints")
 public class UserController {
 
 	private final UserService userService;
@@ -52,6 +58,12 @@ public List<UserGetDTO> getAllUsers() {
 	@PostMapping("/register")
 	@ResponseStatus(HttpStatus.CREATED)
 	@ResponseBody
+	@Operation(summary = "Register a new user", description = "Creates a new user account with the provided username and password")
+	@ApiResponses(value = {
+		@ApiResponse(responseCode = "201", description = "User successfully created"),
+		@ApiResponse(responseCode = "409", description = "Username already exists"),
+		@ApiResponse(responseCode = "400", description = "Invalid input")
+	})
 	public UserGetDTO createUser(@RequestBody UserPostDTO userPostDTO) {
 		// convert API user to internal representation
 		User userInput = DTOMapper.INSTANCE.convertUserPostDTOtoEntity(userPostDTO);
@@ -65,6 +77,11 @@ public List<UserGetDTO> getAllUsers() {
 	@PostMapping("/login")
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
+	@Operation(summary = "Login a user", description = "Authenticates a user with username and password and returns a session token")
+	@ApiResponses(value = {
+		@ApiResponse(responseCode = "200", description = "Login successful"),
+		@ApiResponse(responseCode = "401", description = "Invalid credentials")
+	})
     public UserGetDTO loginUser(@RequestBody UserPostDTO userPostDTO) {
         User userInput = DTOMapper.INSTANCE.convertUserPostDTOtoEntity(userPostDTO);
         User loggedUser = authenticationService.loginUser(userInput);
