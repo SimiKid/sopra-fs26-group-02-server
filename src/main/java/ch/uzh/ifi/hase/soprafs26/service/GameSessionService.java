@@ -65,6 +65,13 @@ public class GameSessionService {
 			try {
 				GameSession saved = gameSessionRepository.save(newGameSession);
 				gameSessionRepository.flush(); // forces unique-constraint check
+
+				// create Player 1
+				Player player1 = new Player();
+				player1.setUserId(saved.getPlayer1Id());
+				player1.setReady(false);
+				playerRepository.save(player1);
+
 				return saved;
 			} catch (DataIntegrityViolationException e) {
 				log.warn("Generated game code already exists. Retrying");
@@ -74,6 +81,7 @@ public class GameSessionService {
 				HttpStatus.SERVICE_UNAVAILABLE,
 				"Could not generate unique game code. Please try again."
 		);
+
 	}
 
 	public GameSession getByGameCode(String gameCode) {
@@ -119,6 +127,12 @@ public class GameSessionService {
 		gameSession = gameSessionRepository.save(gameSession);
 		gameSessionRepository.flush();
 
+		// create Player 2
+		Player player2 = new Player();
+		player2.setUserId(player2Id);
+		player2.setReady(false);
+		playerRepository.save(player2);
+
 		log.info("Player {} joined game session {}", player2Id, gameCode);
 		return gameSession;
 	}
@@ -156,7 +170,13 @@ public class GameSessionService {
 		}
 		
 		Player player = playerRepository.findByUserId(userId);
-		WizardClass wc = WizardClass.valueOf(wizardClassName);	
+		WizardClass wc;
+		try {
+			wc = WizardClass.valueOf(wizardClassName);
+		}
+		catch (IllegalArgumentException e) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid wizard class.");
+		}
 		player.setWizardClass(wc);
 		player.setHp((int)(100 * wc.getHpMultiplier()));
 		
