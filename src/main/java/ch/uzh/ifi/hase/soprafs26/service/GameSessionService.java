@@ -20,7 +20,7 @@ import ch.uzh.ifi.hase.soprafs26.entity.Player;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Random;
+import java.util.UUID;
 
 
 /**
@@ -45,12 +45,6 @@ public class GameSessionService {
 		this.playerRepository = playerRepository;
 	}
 
-	private static final String SYMBOLS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-	private static final int CODE_LENGTH = 6;
-	private static final int MAX_ATTEMPTS = 20;
-    private static final Random rnd = new Random();
-
-
 	public List<GameSession> getGameSessions() {
     return this.gameSessionRepository.findAll();
 }
@@ -61,7 +55,7 @@ public class GameSessionService {
 		newGameSession.setCreatedAt(LocalDateTime.now());
 		newGameSession.setActivePlayerId(newGameSession.getPlayer1Id());
 
-		for (int i = 0; i < MAX_ATTEMPTS; i++) {
+		for (int i = 0; i < 5; i++) {
 			String code = createGameCode();
 			if (gameSessionRepository.existsByGameCode(code)) {
 				continue;
@@ -92,12 +86,51 @@ public class GameSessionService {
 
     // This method creates a random 6-character game code consisting of uppercase letters and digits.
 	private String createGameCode() {
-        StringBuilder sb = new StringBuilder(CODE_LENGTH);
-        for (int i = 0; i < CODE_LENGTH; i++) {
-            sb.append(SYMBOLS.charAt(rnd.nextInt(SYMBOLS.length())));
-        }
-        return sb.toString();
-    }
+		String gameCode = UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+		return gameCode;
+	}
+
+	public GameSession joinGameSession(String gameCode, Long player2Id) {
+		if (gameCode == null || gameCode.length() != 6) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid game code format.");
+		}
+
+		GameSession gameSession = gameSessionRepository.findByGameCode(gameCode);
+
+		if (gameSession == null) {
+			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found or expired.");
+		}
+
+		if (gameSession.getGameStatus() != GameStatus.WAITING) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "Game is not accepting players.");
+		}
+
+		if (gameSession.getPlayer2Id() != null) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "Game is already full.");
+		}
+
+		if (gameSession.getPlayer1Id().equals(player2Id)) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "You cannot join your own game.");
+		}
+
+		gameSession.setPlayer2Id(player2Id);
+		gameSession.setGameStatus(GameStatus.CONFIGURING);
+
+		gameSession = gameSessionRepository.save(gameSession);
+		gameSessionRepository.flush();
+
+		log.info("Player {} joined game session {}", player2Id, gameCode);
+		return gameSession;
+	}
+
+	public boolean deleteByGameCode(String gameCode) {
+		GameSession gameSession = gameSessionRepository.findByGameCode(gameCode);
+		if (gameSession == null) {
+			return false;
+		}
+		gameSessionRepository.delete(gameSession);
+		return true;
+	}
 
 	// This method schedules a cleanup of game sessions that are still waiting for a second player after 10 minutes.
 	// It finds all game sessions where player2Id is null and createdAt is more than 10 minutes ago, and deletes them from the repository.
