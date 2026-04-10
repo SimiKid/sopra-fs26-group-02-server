@@ -45,6 +45,8 @@ public class GameSessionService {
 		this.playerRepository = playerRepository;
 	}
 
+	private static final int MAX_ATTEMPTS = 5;
+
 	public List<GameSession> getGameSessions() {
     return this.gameSessionRepository.findAll();
 }
@@ -55,7 +57,7 @@ public class GameSessionService {
 		newGameSession.setCreatedAt(LocalDateTime.now());
 		newGameSession.setActivePlayerId(newGameSession.getPlayer1Id());
 
-		for (int i = 0; i < 5; i++) {
+		for (int i = 0; i < MAX_ATTEMPTS; i++) {
 			String code = createGameCode();
 			if (gameSessionRepository.existsByGameCode(code)) {
 				continue;
