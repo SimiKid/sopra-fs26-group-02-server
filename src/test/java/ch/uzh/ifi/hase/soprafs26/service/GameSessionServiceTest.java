@@ -2,11 +2,16 @@
 package ch.uzh.ifi.hase.soprafs26.service;
 
 import ch.uzh.ifi.hase.soprafs26.constant.GameStatus;
+import ch.uzh.ifi.hase.soprafs26.constant.WizardClass;
 import ch.uzh.ifi.hase.soprafs26.entity.GameSession;
+import ch.uzh.ifi.hase.soprafs26.entity.Player;
 import ch.uzh.ifi.hase.soprafs26.repository.GameSessionRepository;
+import ch.uzh.ifi.hase.soprafs26.repository.PlayerRepository;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
@@ -16,18 +21,33 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static org.mockito.BDDMockito.given;
 
 class GameSessionServiceTest {
 
     @Mock
     private GameSessionRepository gameSessionRepository;
 
+    @Mock
+    private PlayerRepository playerRepository;
+
     @InjectMocks
     private GameSessionService gameSessionService;
+
+    private GameSession gameSession;
+    private Player player;
 
     @BeforeEach
     void setup() {
         MockitoAnnotations.openMocks(this);
+        gameSession = new GameSession();
+        gameSession.setGameCode("ABC123");
+        gameSession.setGameStatus(GameStatus.CONFIGURING);
+        gameSession.setPlayer1Id(1L);
+        gameSession.setPlayer2Id(2L);
+
+        player = new Player();
+        player.setUserId(1L);
     }
 
     @Test
@@ -191,5 +211,88 @@ class GameSessionServiceTest {
         verify(gameSessionRepository, times(1))
                 .findByPlayer2IdIsNullAndCreatedAtBefore(any(LocalDateTime.class));
         verify(gameSessionRepository, never()).delete(any(GameSession.class));
+    }
+
+
+    @Test
+    public void saveWizardClass_validInput_savesWizardAndHp() {
+        // given
+        given(gameSessionRepository.findByGameCode("ABC123")).willReturn(gameSession);
+        given(playerRepository.findByUserId(1L)).willReturn(player);
+        given(playerRepository.save(any(Player.class))).willAnswer(i -> i.getArgument(0));
+
+        // when
+        Player result = gameSessionService.saveWizardClass("ABC123", 1L, "ATTACKWIZARD");
+
+        // then
+        assertEquals(WizardClass.ATTACKWIZARD, result.getWizardClass());
+        assertEquals((int)(100 * WizardClass.ATTACKWIZARD.getHpMultiplier()), result.getHp());
+    }
+
+    @Test
+    public void saveWizardClass_gamblerWizard_hpWithinExpectedRange() {
+        // given
+        given(gameSessionRepository.findByGameCode("ABC123")).willReturn(gameSession);
+        given(playerRepository.findByUserId(1L)).willReturn(player);
+        given(playerRepository.save(any(Player.class))).willAnswer(i -> i.getArgument(0));
+
+        // when
+        Player result = gameSessionService.saveWizardClass("ABC123", 1L, "GAMBLERWIZARD");
+
+        // then
+        assertEquals(WizardClass.GAMBLERWIZARD, result.getWizardClass());
+        assertTrue(result.getHp() >= 50);   // 100 * 0.5
+        assertTrue(result.getHp() <= 150);  // 100 * 1.5
+    }
+
+    @Test
+    public void saveWizardClass_invalidGameCode_throwsNotFound() {
+        // given
+        given(gameSessionRepository.findByGameCode("WRONG")).willReturn(null);
+
+        // when/then
+        assertThrows(ResponseStatusException.class, () ->
+            gameSessionService.saveWizardClass("WRONG", 1L, "ATTACKWIZARD"));
+    }
+
+    @Test
+    public void saveWizardClass_userNotInGame_throwsForbidden() {
+        // given
+        given(gameSessionRepository.findByGameCode("ABC123")).willReturn(gameSession);
+
+        // when
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () ->
+            gameSessionService.saveWizardClass("ABC123", 99L, "ATTACKWIZARD"));
+
+        // then
+        assertEquals(HttpStatus.FORBIDDEN, exception.getStatusCode());
+    }
+
+    @Test
+    public void saveWizardClass_gameNotInConfiguringStatus_throwsForbidden() {
+        // given
+        gameSession.setGameStatus(GameStatus.WAITING);
+        given(gameSessionRepository.findByGameCode("ABC123")).willReturn(gameSession);
+
+        // when
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () ->
+            gameSessionService.saveWizardClass("ABC123", 1L, "ATTACKWIZARD"));
+
+        // then
+        assertEquals(HttpStatus.FORBIDDEN, exception.getStatusCode());
+    }
+
+    @Test
+    public void saveWizardClass_invalidWizardClassName_throwsBadRequest() {
+        // given
+        given(gameSessionRepository.findByGameCode("ABC123")).willReturn(gameSession);
+        given(playerRepository.findByUserId(1L)).willReturn(player);
+
+        // when
+        ResponseStatusException exception = assertThrows(ResponseStatusException.class, () ->
+            gameSessionService.saveWizardClass("ABC123", 1L, "INVALIDCLASS"));
+
+        // then
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
     }
 }

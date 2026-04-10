@@ -13,7 +13,10 @@ import org.springframework.web.server.ResponseStatusException;
 
 import ch.uzh.ifi.hase.soprafs26.entity.GameSession;
 import ch.uzh.ifi.hase.soprafs26.repository.GameSessionRepository;
+import ch.uzh.ifi.hase.soprafs26.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs26.constant.GameStatus;
+import ch.uzh.ifi.hase.soprafs26.constant.WizardClass;
+import ch.uzh.ifi.hase.soprafs26.entity.Player;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -35,9 +38,11 @@ public class GameSessionService {
 	private final Logger log = LoggerFactory.getLogger(GameSessionService.class);
 
 	private final GameSessionRepository gameSessionRepository;
+	private final PlayerRepository playerRepository;
 
-	public GameSessionService(@Qualifier("gameSessionRepository") GameSessionRepository gameSessionRepository) {
+	public GameSessionService(@Qualifier("gameSessionRepository") GameSessionRepository gameSessionRepository, @Qualifier("playerRepository") PlayerRepository playerRepository) {
 		this.gameSessionRepository = gameSessionRepository;
+		this.playerRepository = playerRepository;
 	}
 
 	public List<GameSession> getGameSessions() {
@@ -60,6 +65,13 @@ public class GameSessionService {
 			try {
 				GameSession saved = gameSessionRepository.save(newGameSession);
 				gameSessionRepository.flush(); // forces unique-constraint check
+
+				// create Player 1
+				Player player1 = new Player();
+				player1.setUserId(saved.getPlayer1Id());
+				player1.setReady(false);
+				playerRepository.save(player1);
+
 				return saved;
 			} catch (DataIntegrityViolationException e) {
 				log.warn("Generated game code already exists. Retrying");
@@ -69,6 +81,7 @@ public class GameSessionService {
 				HttpStatus.SERVICE_UNAVAILABLE,
 				"Could not generate unique game code. Please try again."
 		);
+
 	}
 
 	public GameSession getByGameCode(String gameCode) {
@@ -114,6 +127,12 @@ public class GameSessionService {
 		gameSession = gameSessionRepository.save(gameSession);
 		gameSessionRepository.flush();
 
+		// create Player 2
+		Player player2 = new Player();
+		player2.setUserId(player2Id);
+		player2.setReady(false);
+		playerRepository.save(player2);
+
 		log.info("Player {} joined game session {}", player2Id, gameCode);
 		return gameSession;
 	}
@@ -137,5 +156,30 @@ public class GameSessionService {
 			log.info("Cleaning up expired game session with code {}", session.getGameCode());
 			gameSessionRepository.delete(session);
 		}
+	}
+
+	public Player saveWizardClass(String gameCode, Long userId, String wizardClassName) {
+		GameSession gameSession = getByGameCode(gameCode);
+
+		if (gameSession.getGameStatus() != GameStatus.CONFIGURING) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Game is not in configuration phase.");
+		}
+		
+		if (!userId.equals(gameSession.getPlayer1Id()) && !userId.equals(gameSession.getPlayer2Id())) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not part of this game session.");
+		}
+		
+		Player player = playerRepository.findByUserId(userId);
+		WizardClass wc;
+		try {
+			wc = WizardClass.valueOf(wizardClassName);
+		}
+		catch (IllegalArgumentException e) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid wizard class.");
+		}
+		player.setWizardClass(wc);
+		player.setHp((int)(100 * wc.getHpMultiplier()));
+		
+		return playerRepository.save(player);
 	}
 }
