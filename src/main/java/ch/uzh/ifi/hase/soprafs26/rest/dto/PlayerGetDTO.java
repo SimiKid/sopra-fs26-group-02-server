@@ -3,7 +3,7 @@ import java.util.List;
 
 
 public class PlayerGetDTO {
-    private Long Id;
+    private Long id;
     private Long userId;
     private String wizardClass;
     private List<String> attacks;
@@ -11,11 +11,11 @@ public class PlayerGetDTO {
     private Boolean ready;
 
     public Long getId() {
-        return Id;
+        return id;
     }
 
     public void setId(Long id) {
-        Id = id;
+        this.id = id;
     }
 
     public Long getUserId() {

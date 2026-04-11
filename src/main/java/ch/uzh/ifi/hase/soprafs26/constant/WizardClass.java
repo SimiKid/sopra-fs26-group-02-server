@@ -21,4 +21,12 @@ public enum WizardClass {
         }
         return attackMultiplier;
     }
+
+    public double getHpMultiplier() {
+        if (this == GAMBLERWIZARD) {
+            // Randomly determines the HP modifier for the gambler wizard at the start of a game
+            return Math.random() + 0.5;  // 0.5–1.5
+        }
+        return hpMultiplier;
+    }
 }
