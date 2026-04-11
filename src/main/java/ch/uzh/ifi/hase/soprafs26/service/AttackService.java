@@ -13,6 +13,9 @@ import ch.uzh.ifi.hase.soprafs26.entity.GameSession;
 import ch.uzh.ifi.hase.soprafs26.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.GameSessionRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.UserRepository;
+import ch.uzh.ifi.hase.soprafs26.service.AuthenticationService;
+
+
 
 
 
@@ -29,12 +32,14 @@ public class AttackService {
     private final PlayerRepository playerRepository;
     private final GameSessionRepository gameSessionRepository;
     private final UserRepository userRepository;
+    private final AuthenticationService authenticationService;
 
 
-    public AttackService(PlayerRepository playerRepository, GameSessionRepository gameSessionRepository, UserRepository userRepository) {
+    public AttackService(PlayerRepository playerRepository, GameSessionRepository gameSessionRepository, UserRepository userRepository, AuthenticationService authenticationService) {
         this.playerRepository = playerRepository;
         this.gameSessionRepository=gameSessionRepository;
         this.userRepository=userRepository;
+        this.authenticationService = authenticationService;
     }
 
     public List<AttackGetDTO> getAllAttacks() {
@@ -54,6 +59,11 @@ public class AttackService {
     
   
     public Player setAttacks(String gameCode, Long userId, List<String> attacks) {
+
+        User user = authenticationService.authenticateByToken(token);
+        if (!user.getId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You are not allowed to set attacks for this player");
+        }   
         //check if exactly three attacks are given
         if (attacks == null || attacks.size() != 3) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Exactly 3 attacks must be selected.");
@@ -73,9 +83,9 @@ public class AttackService {
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found."));
 
         //check if the currentSession of the user found above is the same as the one in the game session found above
-        if (user.getCurrentGameSessionId() == null || !user.getCurrentGameSessionId().equals(session.getId())) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not assigned to this game session in their profile.");
-        }
+        //if (user.getCurrentGameSessionId() == null || !user.getCurrentGameSessionId().equals(session.getId())) {
+        //    throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not assigned to this game session in their profile.");
+        //}
 
         //check if each attacks is part auf our constant Attack.java
         for (String attackId : attacks) {

@@ -26,11 +26,9 @@ import java.util.List;
 @RestController
 public class AttackController {
     private final AttackService attackService;
-    private final AuthenticationService authenticationService;
 
-    AttackController(AttackService attackService, AuthenticationService authenticationService) {
+    AttackController(AttackService attackService) {
         this.attackService = attackService;
-        this.authenticationService = authenticationService;
     }
 
     @GetMapping("/attacks")
@@ -44,11 +42,8 @@ public class AttackController {
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
     public PlayerGetDTO setAttacks(@RequestHeader("Authorization") String token, @PathVariable("gameCode") String gameCode, @PathVariable("userId") Long userId, @RequestBody List<String> attacks) {
-        User user = authenticationService.authenticateByToken(token);
-        if (!user.getId().equals(userId)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You are not allowed to set attacks for this player");
-        }   
-        Player updatedPlayer = attackService.setAttacks(gameCode, userId, attacks);
+        
+        Player updatedPlayer = attackService.setAttacks(gameCode, userId, attacks, token);
 
         return DTOMapper.INSTANCE.convertEntityToPlayerGetDTO(updatedPlayer);
     }

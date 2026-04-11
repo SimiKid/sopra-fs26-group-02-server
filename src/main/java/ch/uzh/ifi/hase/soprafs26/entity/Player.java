@@ -1,6 +1,8 @@
 package ch.uzh.ifi.hase.soprafs26.entity;
 
 import java.io.Serializable;
+import java.util.List;
+import java.util.ArrayList;
 
 import ch.uzh.ifi.hase.soprafs26.constant.WizardClass;
 import jakarta.persistence.Column;
@@ -10,6 +12,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+
 
 @Entity
 @Table(name = "players")
@@ -30,6 +33,14 @@ public class Player implements Serializable {
     private String attack1;
     private String attack2;
     private String attack3;
+
+    public List<String> getAttacks() {
+        List<String> attacks = new ArrayList<>();
+        if (this.attack1 != null) attacks.add(this.attack1);
+        if (this.attack2 != null) attacks.add(this.attack2);
+        if (this.attack3 != null) attacks.add(this.attack3);
+        return attacks;
+    }
 
     @Column(nullable = false)
     private int hp;
