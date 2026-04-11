@@ -9,6 +9,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import java.util.Optional;
 
 
 import ch.uzh.ifi.hase.soprafs26.entity.GameSession;
@@ -139,13 +140,11 @@ public class GameSessionService {
 		return gameSession;
 	}
 
-	public boolean deleteByGameCode(String gameCode) {
-		GameSession gameSession = gameSessionRepository.findByGameCode(gameCode);
-		if (gameSession == null) {
-			return false;
-		}
+	public void deleteByGameCode(String gameCode) {
+		GameSession gameSession = Optional.ofNullable(gameSessionRepository.findByGameCode(gameCode))
+			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game session not found"));
+		
 		gameSessionRepository.delete(gameSession);
-		return true;
 	}
 
 	// This method schedules a cleanup of game sessions that are still waiting for a second player after 10 minutes.
