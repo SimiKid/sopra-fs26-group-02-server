@@ -14,11 +14,6 @@ import ch.uzh.ifi.hase.soprafs26.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.GameSessionRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.UserRepository;
 import ch.uzh.ifi.hase.soprafs26.service.AuthenticationService;
-
-
-
-
-
  
 
 import java.util.List;
@@ -58,8 +53,8 @@ public class AttackService {
 
     
   
-    public Player setAttacks(String gameCode, Long userId, List<String> attacks) {
-
+    public Player setAttacks(String gameCode, Long userId, List<String> attacks, String token) {
+        //authenticate the user
         User user = authenticationService.authenticateByToken(token);
         if (!user.getId().equals(userId)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You are not allowed to set attacks for this player");
@@ -78,10 +73,6 @@ public class AttackService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User is not part of this game.");
         }
 
-        //check if the userId is a registered user
-        User user = userRepository.findById(userId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found."));
-
         //check if the currentSession of the user found above is the same as the one in the game session found above
         //if (user.getCurrentGameSessionId() == null || !user.getCurrentGameSessionId().equals(session.getId())) {
         //    throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not assigned to this game session in their profile.");
@@ -95,7 +86,6 @@ public class AttackService {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown attack name: " + attackId);
             }
         }
-
         // Find the player for this userId 
         Player player = playerRepository.findByUserId(userId);
         if (player == null) {
