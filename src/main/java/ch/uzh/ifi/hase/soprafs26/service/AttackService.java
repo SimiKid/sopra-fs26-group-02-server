@@ -87,9 +87,10 @@ public class AttackService {
         }
 
         // Find the player for this userId 
-        Player player = playerRepository.findByUserId(userId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Player not found for the given user in this game."));
-            
+        Player player = playerRepository.findByUserId(userId);
+        if (player == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Player not found for the given user in this game.");
+        }            
         player.setAttack1(attacks.get(0));
         player.setAttack2(attacks.get(1));
         player.setAttack3(attacks.get(2));
