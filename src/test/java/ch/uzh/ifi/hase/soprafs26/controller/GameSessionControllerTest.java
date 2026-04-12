@@ -1,10 +1,13 @@
 package ch.uzh.ifi.hase.soprafs26.controller;
 
+import ch.uzh.ifi.hase.soprafs26.Interceptor.AuthInterceptor;
 import ch.uzh.ifi.hase.soprafs26.constant.GameStatus;
 import ch.uzh.ifi.hase.soprafs26.entity.GameSession;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.service.AuthenticationService;
 import ch.uzh.ifi.hase.soprafs26.service.GameSessionService;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
@@ -21,8 +24,8 @@ import java.time.LocalDateTime;
 
 import static org.hamcrest.Matchers.is;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.doNothing;
-import static org.mockito.BDDMockito.doThrow;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -39,10 +42,19 @@ public class GameSessionControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean
+        private AuthInterceptor authInterceptor;
+
+    @MockitoBean
     private AuthenticationService authenticationService;
 
     @MockitoBean
     private GameSessionService gameSessionService;
+
+    @BeforeEach
+    void setup() {
+        Mockito.when(authInterceptor.preHandle(Mockito.any(), Mockito.any(), Mockito.any()))
+            .thenReturn(true);
+    }
 
     @Test
     public void createGameSession_validToken_gameCreated() throws Exception {
@@ -114,7 +126,6 @@ public class GameSessionControllerTest {
         gameSession.setActivePlayerId(2L);
         gameSession.setCreatedAt(LocalDateTime.of(2026, 4, 8, 9, 30));
 
-        given(authenticationService.authenticateByToken("valid-token")).willReturn(requester);
         given(gameSessionService.getByGameCode("ZXCVBN")).willReturn(gameSession);
 
         // when
@@ -139,7 +150,6 @@ public class GameSessionControllerTest {
         requester.setId(2L);
         requester.setToken("valid-token");
 
-        given(authenticationService.authenticateByToken("valid-token")).willReturn(requester);
         doNothing().when(gameSessionService).deleteByGameCode("DEL123");
 
         // when
@@ -158,7 +168,6 @@ public class GameSessionControllerTest {
         requester.setId(2L);
         requester.setToken("valid-token");
 
-        given(authenticationService.authenticateByToken("valid-token")).willReturn(requester);
         doThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Game session not found"))
             .when(gameSessionService).deleteByGameCode("UNKNOWN");
 
@@ -184,23 +193,6 @@ public class GameSessionControllerTest {
     }
 
     @Test
-    public void getGameSessionByCode_invalidToken_unauthorized() throws Exception {
-        // given
-        given(authenticationService.authenticateByToken("invalid-token"))
-            .willThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or expired token"));
-
-        // when
-        MockHttpServletRequestBuilder getRequest = get("/game/ZXCVBN")
-            .header("Authorization", "invalid-token");
-
-        // then
-        mockMvc.perform(getRequest)
-            .andExpect(status().isUnauthorized());
-
-        verify(gameSessionService, never()).getByGameCode(Mockito.anyString());
-    }
-
-    @Test
     public void getGameSessionByCode_notFound_notFound() throws Exception {
         // given
         User requester = new User();
@@ -220,46 +212,6 @@ public class GameSessionControllerTest {
             .andExpect(status().isNotFound());
     }
 
-    @Test
-    public void getGameSessionByCode_missingAuthorizationHeader_badRequest() throws Exception {
-        // when
-        MockHttpServletRequestBuilder getRequest = get("/game/ZXCVBN");
-
-        // then
-        mockMvc.perform(getRequest)
-            .andExpect(status().isBadRequest());
-
-        verify(gameSessionService, never()).getByGameCode(Mockito.anyString());
-    }
-
-    @Test
-    public void deleteGameSession_invalidToken_unauthorized() throws Exception {
-        // given
-        given(authenticationService.authenticateByToken("invalid-token"))
-            .willThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or expired token"));
-
-        // when
-        MockHttpServletRequestBuilder deleteRequest = delete("/game/DEL123")
-            .header("Authorization", "invalid-token");
-
-        // then
-        mockMvc.perform(deleteRequest)
-            .andExpect(status().isUnauthorized());
-
-        verify(gameSessionService, never()).deleteByGameCode(Mockito.anyString());
-    }
-
-    @Test
-    public void deleteGameSession_missingAuthorizationHeader_badRequest() throws Exception {
-        // when
-        MockHttpServletRequestBuilder deleteRequest = delete("/game/DEL123");
-
-        // then
-        mockMvc.perform(deleteRequest)
-            .andExpect(status().isBadRequest());
-
-        verify(gameSessionService, never()).deleteByGameCode(Mockito.anyString());
-    }
 
     @Test
     public void joinGameSession_validToken_gameJoined() throws Exception {

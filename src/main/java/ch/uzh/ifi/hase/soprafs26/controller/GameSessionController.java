@@ -65,9 +65,7 @@ public class GameSessionController {
         @ApiResponse(responseCode = "404", description = "Game session not found")
     })
     public GameSessionGetDTO getGameSessionByCode(
-            @Parameter(description = "The unique game code") @PathVariable("gameCode") String gameCode,
-            @RequestHeader("Authorization") String token) {
-        authenticationService.authenticateByToken(token);
+            @Parameter(description = "The unique game code") @PathVariable("gameCode") String gameCode) {
         GameSession gameSession = gameSessionService.getByGameCode(gameCode);
         return DTOMapper.INSTANCE.convertEntityToGameSessionGetDTO(gameSession);
     }
@@ -99,9 +97,7 @@ public class GameSessionController {
         @ApiResponse(responseCode = "404", description = "Game session not found")
     })
     public void deleteGameSession(
-            @Parameter(description = "The unique game code") @PathVariable("gameCode") String gameCode,
-            @RequestHeader("Authorization") String token) {
-        authenticationService.authenticateByToken(token);
+            @Parameter(description = "The unique game code") @PathVariable("gameCode") String gameCode) {
         gameSessionService.deleteByGameCode(gameCode);
     }
 }

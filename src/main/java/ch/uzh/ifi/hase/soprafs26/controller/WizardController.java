@@ -25,11 +25,9 @@ import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
 @RestController
 public class WizardController {
 
-    private final AuthenticationService authenticationService;
     private final GameSessionService gameSessionService;
 
     public WizardController(AuthenticationService authenticationService, GameSessionService gameSessionService) {
-        this.authenticationService = authenticationService;
         this.gameSessionService = gameSessionService;
     }
     
@@ -37,8 +35,7 @@ public class WizardController {
     @GetMapping("/wizards")
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
-    public List<WizardClass> getWizards(@RequestHeader("Authorization") String token) {
-        authenticationService.authenticateByToken(token);
+    public List<WizardClass> getWizards() {
         return Arrays.asList(WizardClass.values());
     }
     
@@ -46,7 +43,6 @@ public class WizardController {
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
     public PlayerGetDTO putWizard (@RequestHeader("Authorization") String token, @PathVariable String gameCode, @RequestBody PlayerPutDTO playerPutDTO) {
-        authenticationService.authenticateByToken(token);
         Player player = gameSessionService.saveWizardClass(gameCode, token, playerPutDTO.getWizardClass());
         return DTOMapper.INSTANCE.convertEntityToPlayerGetDTO(player);
     }
