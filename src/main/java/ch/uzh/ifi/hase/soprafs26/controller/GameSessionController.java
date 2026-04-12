@@ -102,10 +102,7 @@ public class GameSessionController {
             @Parameter(description = "The unique game code") @PathVariable("gameCode") String gameCode,
             @RequestHeader("Authorization") String token) {
         authenticationService.authenticateByToken(token);
-        boolean deleted = gameSessionService.deleteByGameCode(gameCode);
-        if (!deleted) {
-            throw new org.springframework.web.server.ResponseStatusException(HttpStatus.NOT_FOUND, "Game session not found");
-        }
+        gameSessionService.deleteByGameCode(gameCode);
     }
 }
 	// Helper for protected endpoints (Task #76 - Session Management):

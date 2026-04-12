@@ -16,10 +16,13 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.web.server.ResponseStatusException;
 
+
 import java.time.LocalDateTime;
 
 import static org.hamcrest.Matchers.is;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.doNothing;
+import static org.mockito.BDDMockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -137,7 +140,7 @@ public class GameSessionControllerTest {
         requester.setToken("valid-token");
 
         given(authenticationService.authenticateByToken("valid-token")).willReturn(requester);
-        given(gameSessionService.deleteByGameCode("DEL123")).willReturn(true);
+        doNothing().when(gameSessionService).deleteByGameCode("DEL123");
 
         // when
         MockHttpServletRequestBuilder deleteRequest = delete("/game/DEL123")
@@ -156,7 +159,8 @@ public class GameSessionControllerTest {
         requester.setToken("valid-token");
 
         given(authenticationService.authenticateByToken("valid-token")).willReturn(requester);
-        given(gameSessionService.deleteByGameCode("UNKNOWN")).willReturn(false);
+        doThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Game session not found"))
+            .when(gameSessionService).deleteByGameCode("UNKNOWN");
 
         // when
         MockHttpServletRequestBuilder deleteRequest = delete("/game/UNKNOWN")

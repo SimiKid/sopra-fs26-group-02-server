@@ -34,7 +34,7 @@ public class WizardController {
     }
     
     // Endpoint to get the list of available wizard classes
-    @GetMapping("/wizard")
+    @GetMapping("/wizards")
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
     public List<WizardClass> getWizards(@RequestHeader("Authorization") String token) {
@@ -42,12 +42,12 @@ public class WizardController {
         return Arrays.asList(WizardClass.values());
     }
     
-    @PutMapping("/game/{gameCode}/players/{userId}/wizard")
+    @PutMapping("/game/{gameCode}/wizard")
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
-    public PlayerGetDTO putWizard (@RequestHeader("Authorization") String token, @PathVariable("gameCode") String gameCode, @PathVariable("userId") Long userId, @RequestBody PlayerPutDTO playerPutDTO) {
+    public PlayerGetDTO putWizard (@RequestHeader("Authorization") String token, @PathVariable String gameCode, @RequestBody PlayerPutDTO playerPutDTO) {
         authenticationService.authenticateByToken(token);
-        Player player = gameSessionService.saveWizardClass(gameCode, userId, playerPutDTO.getWizardClass());
+        Player player = gameSessionService.saveWizardClass(gameCode, token, playerPutDTO.getWizardClass());
         return DTOMapper.INSTANCE.convertEntityToPlayerGetDTO(player);
     }
     

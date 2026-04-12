@@ -1,5 +1,6 @@
 package ch.uzh.ifi.hase.soprafs26.service;
 
+import ch.uzh.ifi.hase.soprafs26.controller.UserController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -9,14 +10,17 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import java.util.Optional;
 
 
 import ch.uzh.ifi.hase.soprafs26.entity.GameSession;
 import ch.uzh.ifi.hase.soprafs26.repository.GameSessionRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.PlayerRepository;
+import ch.uzh.ifi.hase.soprafs26.repository.UserRepository;
 import ch.uzh.ifi.hase.soprafs26.constant.GameStatus;
 import ch.uzh.ifi.hase.soprafs26.constant.WizardClass;
 import ch.uzh.ifi.hase.soprafs26.entity.Player;
+import ch.uzh.ifi.hase.soprafs26.entity.User;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -35,14 +39,20 @@ import java.util.UUID;
 @Transactional
 public class GameSessionService {
 
-	private final Logger log = LoggerFactory.getLogger(GameSessionService.class);
 
+
+    private final Logger log = LoggerFactory.getLogger(GameSessionService.class);
+
+	private final UserController userController;
 	private final GameSessionRepository gameSessionRepository;
 	private final PlayerRepository playerRepository;
+	private final UserRepository userRepository;
 
-	public GameSessionService(@Qualifier("gameSessionRepository") GameSessionRepository gameSessionRepository, @Qualifier("playerRepository") PlayerRepository playerRepository) {
+	public GameSessionService(@Qualifier("gameSessionRepository") GameSessionRepository gameSessionRepository, @Qualifier("playerRepository") PlayerRepository playerRepository, UserController userController, UserRepository userRepository) {
 		this.gameSessionRepository = gameSessionRepository;
 		this.playerRepository = playerRepository;
+        this.userController = userController;
+		this.userRepository = userRepository;
 	}
 
 	private static final int MAX_ATTEMPTS = 5;
@@ -139,13 +149,11 @@ public class GameSessionService {
 		return gameSession;
 	}
 
-	public boolean deleteByGameCode(String gameCode) {
-		GameSession gameSession = gameSessionRepository.findByGameCode(gameCode);
-		if (gameSession == null) {
-			return false;
-		}
+	public void deleteByGameCode(String gameCode) {
+		GameSession gameSession = Optional.ofNullable(gameSessionRepository.findByGameCode(gameCode))
+			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game session not found"));
+		
 		gameSessionRepository.delete(gameSession);
-		return true;
 	}
 
 	// This method schedules a cleanup of game sessions that are still waiting for a second player after 10 minutes.
@@ -160,12 +168,15 @@ public class GameSessionService {
 		}
 	}
 
-	public Player saveWizardClass(String gameCode, Long userId, String wizardClassName) {
+	public Player saveWizardClass(String gameCode, String token, String wizardClassName) {
 		GameSession gameSession = getByGameCode(gameCode);
 
 		if (gameSession.getGameStatus() != GameStatus.CONFIGURING) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Game is not in configuration phase.");
 		}
+		
+		User user = userRepository.findByToken(token);
+		Long userId = user.getId();
 		
 		if (!userId.equals(gameSession.getPlayer1Id()) && !userId.equals(gameSession.getPlayer2Id())) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not part of this game session.");
