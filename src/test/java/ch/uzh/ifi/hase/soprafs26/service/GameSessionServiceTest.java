@@ -5,8 +5,10 @@ import ch.uzh.ifi.hase.soprafs26.constant.GameStatus;
 import ch.uzh.ifi.hase.soprafs26.constant.WizardClass;
 import ch.uzh.ifi.hase.soprafs26.entity.GameSession;
 import ch.uzh.ifi.hase.soprafs26.entity.Player;
+import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.repository.GameSessionRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.PlayerRepository;
+import ch.uzh.ifi.hase.soprafs26.repository.UserRepository;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,11 +33,16 @@ class GameSessionServiceTest {
     @Mock
     private PlayerRepository playerRepository;
 
+    @Mock
+    private UserRepository userRepository;
+
     @InjectMocks
     private GameSessionService gameSessionService;
 
     private GameSession gameSession;
     private Player player;
+    private User user;
+    private User otherUser;
 
     @BeforeEach
     void setup() {
@@ -48,6 +55,14 @@ class GameSessionServiceTest {
 
         player = new Player();
         player.setUserId(1L);
+
+        user = new User();
+        user.setId(1L);
+        user.setToken("valid-token");
+
+        otherUser = new User();
+        otherUser.setId(99L);
+        otherUser.setToken("other-token");
     }
 
     @Test
@@ -218,11 +233,12 @@ class GameSessionServiceTest {
     public void saveWizardClass_validInput_savesWizardAndHp() {
         // given
         given(gameSessionRepository.findByGameCode("ABC123")).willReturn(gameSession);
+        given(userRepository.findByToken("valid-token")).willReturn(user);   
         given(playerRepository.findByUserId(1L)).willReturn(player);
         given(playerRepository.save(any(Player.class))).willAnswer(i -> i.getArgument(0));
 
         // when
-        Player result = gameSessionService.saveWizardClass("ABC123", 1L, "ATTACKWIZARD");
+        Player result = gameSessionService.saveWizardClass("ABC123", "valid-token", "ATTACKWIZARD");
 
         // then
         assertEquals(WizardClass.ATTACKWIZARD, result.getWizardClass());
@@ -232,12 +248,13 @@ class GameSessionServiceTest {
     @Test
     public void saveWizardClass_gamblerWizard_hpWithinExpectedRange() {
         // given
-        given(gameSessionRepository.findByGameCode("ABC123")).willReturn(gameSession);
+        given(gameSessionRepository.findByGameCode("ABC123")).willReturn(gameSession);        
+        given(userRepository.findByToken("valid-token")).willReturn(user);  
         given(playerRepository.findByUserId(1L)).willReturn(player);
         given(playerRepository.save(any(Player.class))).willAnswer(i -> i.getArgument(0));
 
         // when
-        Player result = gameSessionService.saveWizardClass("ABC123", 1L, "GAMBLERWIZARD");
+        Player result = gameSessionService.saveWizardClass("ABC123", "valid-token", "GAMBLERWIZARD");
 
         // then
         assertEquals(WizardClass.GAMBLERWIZARD, result.getWizardClass());
@@ -252,17 +269,18 @@ class GameSessionServiceTest {
 
         // when/then
         assertThrows(ResponseStatusException.class, () ->
-            gameSessionService.saveWizardClass("WRONG", 1L, "ATTACKWIZARD"));
+            gameSessionService.saveWizardClass("WRONG", "valid-token", "ATTACKWIZARD"));
     }
 
     @Test
     public void saveWizardClass_userNotInGame_throwsForbidden() {
         // given
+        given(userRepository.findByToken("other-token")).willReturn(otherUser);
         given(gameSessionRepository.findByGameCode("ABC123")).willReturn(gameSession);
 
         // when
         ResponseStatusException exception = assertThrows(ResponseStatusException.class, () ->
-            gameSessionService.saveWizardClass("ABC123", 99L, "ATTACKWIZARD"));
+            gameSessionService.saveWizardClass("ABC123", "other-token", "ATTACKWIZARD"));
 
         // then
         assertEquals(HttpStatus.FORBIDDEN, exception.getStatusCode());
@@ -276,7 +294,7 @@ class GameSessionServiceTest {
 
         // when
         ResponseStatusException exception = assertThrows(ResponseStatusException.class, () ->
-            gameSessionService.saveWizardClass("ABC123", 1L, "ATTACKWIZARD"));
+            gameSessionService.saveWizardClass("ABC123", "valid-token", "ATTACKWIZARD"));
 
         // then
         assertEquals(HttpStatus.FORBIDDEN, exception.getStatusCode());
@@ -286,11 +304,12 @@ class GameSessionServiceTest {
     public void saveWizardClass_invalidWizardClassName_throwsBadRequest() {
         // given
         given(gameSessionRepository.findByGameCode("ABC123")).willReturn(gameSession);
+        given(userRepository.findByToken("valid-token")).willReturn(user);
         given(playerRepository.findByUserId(1L)).willReturn(player);
 
         // when
         ResponseStatusException exception = assertThrows(ResponseStatusException.class, () ->
-            gameSessionService.saveWizardClass("ABC123", 1L, "INVALIDCLASS"));
+            gameSessionService.saveWizardClass("ABC123", "valid-token", "INVALIDCLASS"));
 
         // then
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());

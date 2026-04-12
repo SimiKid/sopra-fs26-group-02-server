@@ -37,7 +37,7 @@ public class WizardControllerTest {
     public void getWizards_validToken_returnsAllClasses() throws Exception {
 
         //when then
-        mockMvc.perform(get("/wizard")
+        mockMvc.perform(get("/wizards")
                 .header("Authorization", "valid-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(4)))
@@ -51,7 +51,7 @@ public class WizardControllerTest {
             .when(authenticationService).authenticateByToken("invalid Token");
         
         //when then
-        mockMvc.perform(get("/wizard")
+        mockMvc.perform(get("/wizards")
                 .header("Authorization", "invalid Token"))
                 .andExpect(status().isUnauthorized());
     }
@@ -63,10 +63,10 @@ public class WizardControllerTest {
         player.setWizardClass(WizardClass.ATTACKWIZARD);
         player.setHp(100);
 
-        given(gameSessionService.saveWizardClass("123", 1L, "ATTACKWIZARD")).willReturn(player);
+        given(gameSessionService.saveWizardClass("123", "valid-token", "ATTACKWIZARD")).willReturn(player);
 
         //when then
-        mockMvc.perform(put("/game/123/players/1/wizard")
+        mockMvc.perform(put("/game/123/wizard")
                 .header("Authorization", "valid-token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"wizardClass\": \"ATTACKWIZARD\"}"))
@@ -82,7 +82,7 @@ public class WizardControllerTest {
             .when(authenticationService).authenticateByToken
             ("invalid Token");
         //when then
-        mockMvc.perform(put("/game/123/players/1/wizard")
+        mockMvc.perform(put("/game/123/wizard")
                 .header("Authorization", "invalid Token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"wizardClass\": \"ATTACKWIZARD\"}"))
@@ -93,10 +93,10 @@ public class WizardControllerTest {
     public void putWizard_invalidWizardClass_returnsBadRequest() throws Exception {
         //given
         doThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST))
-            .when(gameSessionService).saveWizardClass("123", 1L, "INVALIDCLASS");
+            .when(gameSessionService).saveWizardClass("123", "valid-token", "INVALIDCLASS");
         
         //when then
-        mockMvc.perform(put("/game/123/players/1/wizard")
+        mockMvc.perform(put("/game/123/wizard")
                 .header("Authorization", "valid-token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"wizardClass\": \"INVALIDCLASS\"}"))
