@@ -86,7 +86,9 @@ public class GameSessionService {
 
 				User user = userRepository.findById(saved.getPlayer1Id())
                 	.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
-            
+				if (user.getCurrentGameSessionId() != null) {
+					throw new ResponseStatusException(HttpStatus.CONFLICT, "User already is in a game session.");
+				}
             	user.setCurrentGameSessionId(saved.getId()); 
                 userRepository.save(user); 
 
@@ -152,7 +154,9 @@ public class GameSessionService {
 
 		User user = userRepository.findById(player2Id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
-            
+        if (user.getCurrentGameSessionId() != null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "User already is in another game session.");
+        }
         user.setCurrentGameSessionId(gameSession.getId()); 
         userRepository.save(user); 
 
