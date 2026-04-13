@@ -106,9 +106,8 @@ public class GameSessionService {
 
     // This method creates a random 6-character game code consisting of uppercase letters and digits.
 	private String createGameCode() {
-		String gameCode = UUID.randomUUID().toString().substring(0, 6).toUpperCase();
-		return gameCode;
-	}
+		return UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+		}
 
 	public GameSession joinGameSession(String gameCode, Long player2Id) {
 		if (gameCode == null || gameCode.length() != 6) {
