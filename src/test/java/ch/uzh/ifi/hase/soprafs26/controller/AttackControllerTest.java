@@ -85,11 +85,11 @@ public class AttackControllerTest {
         player.setAttack3("HEAL");
         player.setReady(true);
 
-        given(attackService.setAttacks(eq(gameCode), eq(userId), any(), eq(token)))
+        given(attackService.setAttacks(eq(gameCode), any(), eq(token)))
                 .willReturn(player);
 
         // when then
-        mockMvc.perform(put("/game/" + gameCode + "/players/" + userId + "/attacks")
+        mockMvc.perform(put("/game/" + gameCode + "/attacks")
                 .header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(new ObjectMapper().writeValueAsString(attackList))) // Wandelt die Liste in JSON um
@@ -100,7 +100,7 @@ public class AttackControllerTest {
                 .andExpect(jsonPath("$.attacks[2]", is("HEAL")))
                 .andExpect(jsonPath("$.ready", is(true)));
 
-        verify(attackService).setAttacks(eq(gameCode), eq(userId), any(), eq(token));
+        verify(attackService).setAttacks(eq(gameCode), any(), eq(token));
     }
 
     @Test
@@ -108,10 +108,10 @@ public class AttackControllerTest {
         String token = "test-token";
         List<String> shortList = List.of("FIREBALL");
 
-        given(attackService.setAttacks(any(), any(), any(), any()))
+        given(attackService.setAttacks(any(), any(), any()))
             .willThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Exactly 3 attacks must be selected."));
 
-        mockMvc.perform(put("/game/G123/players/1/attacks")
+        mockMvc.perform(put("/game/G123/attacks")
                 .header("Authorization", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(new ObjectMapper().writeValueAsString(shortList)))

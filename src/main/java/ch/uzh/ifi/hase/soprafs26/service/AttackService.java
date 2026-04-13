@@ -56,6 +56,8 @@ public class AttackService {
     
   
     public Player setAttacks(String gameCode, List<String> attacks, String token) {
+        //more checks that could be added: check if wizard is already selected, check if two players are in the gamesession
+        
         //authenticate the user
         User user = authenticationService.authenticateByToken(token);
         
@@ -73,10 +75,10 @@ public class AttackService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User is not part of this game.");
         }
 
-        //check if the currentSession of the user found above is the same as the one in the game session found above
-        //if (user.getCurrentGameSessionId() == null || !user.getCurrentGameSessionId().equals(session.getId())) {
-        //    throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not assigned to this game session in their profile.");
-        //}
+        //check if the currentSessionID of the user found above is the same as the one in the game session found above
+        if (user.getCurrentGameSessionId() == null || !user.getCurrentGameSessionId().equals(session.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not assigned to this game session in their profile.");
+        }
 
         //check if each attacks is part auf our constant Attack.java
         for (String attackId : attacks) {
