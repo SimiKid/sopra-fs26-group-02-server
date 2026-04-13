@@ -101,8 +101,4 @@ public class GameSessionController {
         gameSessionService.deleteByGameCode(gameCode);
     }
 }
-	// Helper for protected endpoints (Task #76 - Session Management):
-	// To secure a endpoint, follow these two steps:
-	// 1. Add '@RequestHeader("Authorization") String token' as a method parameter.
-	// 2. Call 'authenticationService.authenticateByToken(token);' as the first line of the method.
-	// If the token is invalid or missing, an UNAUTHORIZED (401) exception will be thrown automatically.
+	

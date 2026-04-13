@@ -84,6 +84,12 @@ public class GameSessionService {
 				player1.setReady(false);
 				playerRepository.save(player1);
 
+				User user = userRepository.findById(saved.getPlayer1Id())
+                	.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+            
+            	user.setCurrentGameSessionId(saved.getId()); 
+                userRepository.save(user); 
+
 				return saved;
 			} catch (DataIntegrityViolationException e) {
 				log.warn("Generated game code already exists. Retrying");
@@ -144,6 +150,12 @@ public class GameSessionService {
 		player2.setReady(false);
 		playerRepository.save(player2);
 
+		User user = userRepository.findById(player2Id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+            
+        user.setCurrentGameSessionId(gameSession.getId()); 
+        userRepository.save(user); 
+
 		log.info("Player {} joined game session {}", player2Id, gameCode);
 		return gameSession;
 	}
@@ -151,7 +163,16 @@ public class GameSessionService {
 	public void deleteByGameCode(String gameCode) {
 		GameSession gameSession = Optional.ofNullable(gameSessionRepository.findByGameCode(gameCode))
 			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game session not found"));
-		
+		User user=userRepository.findById(gameSession.getPlayer1Id())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        user.setCurrentGameSessionId(null);
+        userRepository.save(user);
+		if (gameSession.getPlayer2Id() != null) {
+        	user=userRepository.findById(gameSession.getPlayer2Id())
+            	.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+			user.setCurrentGameSessionId(null);
+			userRepository.save(user);
+		}
 		gameSessionRepository.delete(gameSession);
 	}
 

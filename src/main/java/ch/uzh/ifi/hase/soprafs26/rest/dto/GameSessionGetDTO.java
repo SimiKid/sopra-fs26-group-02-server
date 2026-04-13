@@ -7,9 +7,6 @@ import java.time.LocalDateTime;
 @Schema(description = "DTO returned when retrieving game session information")
 public class GameSessionGetDTO {
 
-    @Schema(description = "Unique identifier of the game session", example = "1")
-    private Long id;
-
     @Schema(description = "Unique code used to join the game", example = "abc123ef")
     private String gameCode;
 
@@ -27,14 +24,6 @@ public class GameSessionGetDTO {
 
     @Schema(description = "Timestamp when the game session was created", example = "2026-04-09T14:30:00")
     private LocalDateTime createdAt;
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
 
     public String getGameCode() {
         return gameCode;
