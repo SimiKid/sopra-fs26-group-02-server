@@ -4,7 +4,9 @@ import ch.uzh.ifi.hase.soprafs26.service.AuthenticationService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.stereotype.Component;
 
+@Component
 public class AuthInterceptor implements HandlerInterceptor{
     private final AuthenticationService authenticationService;
 
