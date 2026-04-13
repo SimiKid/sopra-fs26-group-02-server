@@ -13,6 +13,7 @@ import ch.uzh.ifi.hase.soprafs26.entity.GameSession;
 import ch.uzh.ifi.hase.soprafs26.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.GameSessionRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.UserRepository;
+import ch.uzh.ifi.hase.soprafs26.constant.GameStatus;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -98,6 +99,20 @@ public class AttackService {
         player.setAttack3(attacks.get(2));
 
         player.setReady(true);
+
+        //set gamesession status to battle when both players are ready
+        Player player1=playerRepository.findByUserId(session.getPlayer1Id());
+        if (player1 == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Player1 not found");
+        }
+        Player player2=playerRepository.findByUserId(session.getPlayer2Id());
+        if (player2 == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Player2 not found");
+        }
+        if (player1.isReady() && player2.isReady()) {
+            session.setGameStatus(GameStatus.BATTLE);
+            gameSessionRepository.save(session);
+        }
 
         return playerRepository.save(player);
     }
