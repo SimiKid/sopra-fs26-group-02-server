@@ -14,14 +14,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
-/**
- * GameSession Controller
- * This class is responsible for handling all REST request that are related to
- * the game session.
- * The controller will receive the request and delegate the execution to the
- * GameSessionService and finally return the result.
- */
-
 
 @RestController
 public class AttackController {
@@ -38,18 +30,13 @@ public class AttackController {
         return attackService.getAllAttacks();
     }
     
-    @PutMapping("/game/{gameCode}/players/{userId}/attacks")
+    @PutMapping("/game/{gameCode}/attacks")
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
-    public PlayerGetDTO setAttacks(@RequestHeader("Authorization") String token, @PathVariable("gameCode") String gameCode, @PathVariable("userId") Long userId, @RequestBody List<String> attacks) {
+    public PlayerGetDTO setAttacks(@RequestHeader("Authorization") String token, @PathVariable("gameCode") String gameCode, @RequestBody List<String> attacks) {
         
-        Player updatedPlayer = attackService.setAttacks(gameCode, userId, attacks, token);
+        Player updatedPlayer = attackService.setAttacks(gameCode, attacks, token);
 
         return DTOMapper.INSTANCE.convertEntityToPlayerGetDTO(updatedPlayer);
     }
 }
-	// Helper for protected endpoints (Task #76 - Session Management):
-	// To secure a endpoint, follow these two steps:
-	// 1. Add '@RequestHeader("Authorization") String token' as a method parameter.
-	// 2. Call 'authenticationService.authenticateByToken(token);' as the first line of the method.
-	// If the token is invalid or missing, an UNAUTHORIZED (401) exception will be thrown automatically.

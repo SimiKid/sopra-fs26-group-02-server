@@ -13,8 +13,9 @@ import ch.uzh.ifi.hase.soprafs26.entity.GameSession;
 import ch.uzh.ifi.hase.soprafs26.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.GameSessionRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.UserRepository;
-import ch.uzh.ifi.hase.soprafs26.service.AuthenticationService;
- 
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -24,6 +25,7 @@ import java.util.ArrayList;
 @Service
 @Transactional
 public class AttackService {
+    private final Logger log = LoggerFactory.getLogger(AttackService.class);
     private final PlayerRepository playerRepository;
     private final GameSessionRepository gameSessionRepository;
     private final UserRepository userRepository;
@@ -53,12 +55,10 @@ public class AttackService {
 
     
   
-    public Player setAttacks(String gameCode, Long userId, List<String> attacks, String token) {
+    public Player setAttacks(String gameCode, List<String> attacks, String token) {
         //authenticate the user
         User user = authenticationService.authenticateByToken(token);
-        if (!user.getId().equals(userId)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You are not allowed to set attacks for this player");
-        }   
+        
         //check if exactly three attacks are given
         if (attacks == null || attacks.size() != 3) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Exactly 3 attacks must be selected.");
@@ -69,7 +69,7 @@ public class AttackService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found.");
         }
         //check if the above found session has the userId saved either in player1 or player2 (player is part of the game)
-        if (!userId.equals(session.getPlayer1Id()) && !userId.equals(session.getPlayer2Id())) {
+        if (!user.getId().equals(session.getPlayer1Id()) && !user.getId().equals(session.getPlayer2Id())) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User is not part of this game.");
         }
 
@@ -87,7 +87,7 @@ public class AttackService {
             }
         }
         // Find the player for this userId 
-        Player player = playerRepository.findByUserId(userId);
+        Player player = playerRepository.findByUserId(user.getId());
         if (player == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Player not found for the given user in this game.");
         }            
