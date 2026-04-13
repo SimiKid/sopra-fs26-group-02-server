@@ -27,7 +27,7 @@ public class AttackController {
         return attackService.getAllAttacks();
     }
     
-    @PutMapping("/game/{gameCode}/attacks")
+    @PutMapping("/games/{gameCode}/attacks")
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
     public PlayerGetDTO setAttacks(@RequestHeader("Authorization") String token, @PathVariable("gameCode") String gameCode, @RequestBody List<String> attacks) {

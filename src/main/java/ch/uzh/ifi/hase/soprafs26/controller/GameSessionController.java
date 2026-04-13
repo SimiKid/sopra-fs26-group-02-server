@@ -39,7 +39,7 @@ public class GameSessionController {
         this.authenticationService = authenticationService;
 	}
 
-    @PostMapping("/game")
+    @PostMapping("/games")
     @ResponseStatus(HttpStatus.CREATED)
     @ResponseBody
     @Operation(summary = "Create a new game session", description = "Creates a new game session with the authenticated user as player 1")
@@ -55,7 +55,7 @@ public class GameSessionController {
         return DTOMapper.INSTANCE.convertEntityToGameSessionGetDTO(createdGameSession);
     }
 
-    @GetMapping("/game/{gameCode}")
+    @GetMapping("/games/{gameCode}")
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
     @Operation(summary = "Get a game session by code", description = "Retrieves the game session details for the given game code")
@@ -70,7 +70,7 @@ public class GameSessionController {
         return DTOMapper.INSTANCE.convertEntityToGameSessionGetDTO(gameSession);
     }
 
-    @PutMapping("/game/{gameCode}/join")
+    @PutMapping("/games/{gameCode}/join")
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
     @Operation(summary = "Join an existing game session", description = "Adds the authenticated user as player 2 to the game session")
@@ -88,7 +88,7 @@ public class GameSessionController {
         return DTOMapper.INSTANCE.convertEntityToGameSessionGetDTO(updatedGameSession);
     }
 
-    @DeleteMapping("/game/{gameCode}")
+    @DeleteMapping("/games/{gameCode}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Delete a game session", description = "Deletes the game session with the given game code")
     @ApiResponses(value = {

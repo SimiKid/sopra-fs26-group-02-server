@@ -39,7 +39,7 @@ public class WizardController {
         return Arrays.asList(WizardClass.values());
     }
     
-    @PutMapping("/game/{gameCode}/wizards")
+    @PutMapping("/games/{gameCode}/wizards")
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
     public PlayerGetDTO putWizard (@RequestHeader("Authorization") String token, @PathVariable String gameCode, @RequestBody PlayerPutDTO playerPutDTO) {
