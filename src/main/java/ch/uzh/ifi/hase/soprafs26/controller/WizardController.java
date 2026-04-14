@@ -42,7 +42,7 @@ public class WizardController {
     @PutMapping("/games/{gameCode}/wizards")
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
-    public PlayerGetDTO putWizard (@RequestHeader("Authorization") String token, @PathVariable String gameCode, @RequestBody PlayerPutDTO playerPutDTO) {
+    public PlayerGetDTO putWizard (@RequestHeader("Authorization") String token, @PathVariable ("gameCode") String gameCode, @RequestBody PlayerPutDTO playerPutDTO) {
         Player player = gameSessionService.saveWizardClass(gameCode, token, playerPutDTO.getWizardClass());
         return DTOMapper.INSTANCE.convertEntityToPlayerGetDTO(player);
     }
