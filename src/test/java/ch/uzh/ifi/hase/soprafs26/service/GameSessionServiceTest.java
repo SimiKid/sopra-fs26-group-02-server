@@ -19,6 +19,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -76,6 +77,10 @@ class GameSessionServiceTest {
             gs.setId(1L);
             return gs;
         });
+
+        User user = new User();
+        user.setId(67L);
+        when(userRepository.findById(67L)).thenReturn(Optional.of(user));
 
         GameSession created = gameSessionService.createGameSession(input);
 
@@ -140,6 +145,9 @@ class GameSessionServiceTest {
 
         when(gameSessionRepository.findByGameCode("ABC123")).thenReturn(existing);
         when(gameSessionRepository.save(any(GameSession.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        User mockUser = new User();
+        mockUser.setId(2L);
+        when(userRepository.findById(2L)).thenReturn(Optional.of(mockUser));
 
         GameSession result = gameSessionService.joinGameSession("ABC123", 2L);
 

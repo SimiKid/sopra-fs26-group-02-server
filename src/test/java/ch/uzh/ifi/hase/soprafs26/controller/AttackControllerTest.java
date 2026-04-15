@@ -1,10 +1,14 @@
 package ch.uzh.ifi.hase.soprafs26.controller;
 
+import ch.uzh.ifi.hase.soprafs26.Interceptor.AuthInterceptor;
 import ch.uzh.ifi.hase.soprafs26.constant.Attack;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.AttackGetDTO;
 import ch.uzh.ifi.hase.soprafs26.service.AttackService;
 import ch.uzh.ifi.hase.soprafs26.entity.Player;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.HttpStatus;
@@ -38,6 +42,14 @@ public class AttackControllerTest {
 
     @MockitoBean
     private AttackService attackService;
+
+    @MockitoBean
+    private AuthInterceptor authInterceptor;
+    
+    @BeforeEach
+    void setup() {
+        Mockito.when(authInterceptor.preHandle(any(), any(), any())).thenReturn(true);
+    }
 
     private static AttackGetDTO toDto(Attack attack) {
         AttackGetDTO dto = new AttackGetDTO();

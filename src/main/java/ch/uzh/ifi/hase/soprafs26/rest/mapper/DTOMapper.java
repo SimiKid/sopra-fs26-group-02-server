@@ -41,6 +41,7 @@ public interface DTOMapper {
 	@BeanMapping(unmappedTargetPolicy = ReportingPolicy.IGNORE) // ignore unmapped target properties until they are implemented
 	GameSession convertGameSessionPostDTOtoEntity(GameSessionPostDTO gameSessionPostDTO);
 
+	@Mapping(source = "id", target = "id")
 	@Mapping(source = "gameCode", target = "gameCode")
 	@Mapping(source = "gameStatus", target = "gameStatus")
 	@Mapping(source = "player1Id", target = "player1Id")

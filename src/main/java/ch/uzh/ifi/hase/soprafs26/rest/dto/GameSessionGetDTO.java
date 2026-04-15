@@ -25,6 +25,8 @@ public class GameSessionGetDTO {
     @Schema(description = "Timestamp when the game session was created", example = "2026-04-09T14:30:00")
     private LocalDateTime createdAt;
 
+    private Long id;
+
     public String getGameCode() {
         return gameCode;
     }
@@ -71,5 +73,14 @@ public class GameSessionGetDTO {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id; 
+
     }
 }

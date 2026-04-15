@@ -67,7 +67,7 @@ public class WizardControllerTest {
         given(gameSessionService.saveWizardClass("123", "valid-token", "ATTACKWIZARD")).willReturn(player);
 
         //when then
-        mockMvc.perform(put("/games/123/wizard")
+        mockMvc.perform(put("/games/123/wizards")
                 .header("Authorization", "valid-token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"wizardClass\": \"ATTACKWIZARD\"}"))
@@ -84,7 +84,7 @@ public class WizardControllerTest {
             .when(gameSessionService).saveWizardClass("123", "valid-token", "INVALIDCLASS");
         
         //when then
-        mockMvc.perform(put("/games/123/wizard")
+        mockMvc.perform(put("/games/123/wizards")
                 .header("Authorization", "valid-token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"wizardClass\": \"INVALIDCLASS\"}"))
