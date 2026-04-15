@@ -111,6 +111,9 @@ public class AttackService {
         }
         if (player1.isReady() && player2.isReady()) {
             session.setGameStatus(GameStatus.BATTLE);
+            session.setActivePlayerId(
+                Math.random() < 0.5 ? session.getPlayer1Id() : session.getPlayer2Id()
+            );
             gameSessionRepository.save(session);
         }
 
