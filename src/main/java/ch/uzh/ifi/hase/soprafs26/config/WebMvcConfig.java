@@ -17,6 +17,6 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(authInterceptor)
-                .addPathPatterns("/games/**", "/wizard/**", "/attack/**"); // protected routes, ** means any path on the structure will be added.
+                .addPathPatterns("/game/**", "/wizard/**", "/attack/**"); // protected routes, ** means any path on the structure will be added.
     }
 }
