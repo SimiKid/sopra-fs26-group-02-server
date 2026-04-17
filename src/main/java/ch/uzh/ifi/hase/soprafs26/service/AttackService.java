@@ -17,9 +17,6 @@ import ch.uzh.ifi.hase.soprafs26.repository.GameSessionRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.UserRepository;
 import ch.uzh.ifi.hase.soprafs26.constant.GameStatus;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.List;
 import java.util.ArrayList;
 
@@ -28,7 +25,6 @@ import java.util.ArrayList;
 @Service
 @Transactional
 public class AttackService {
-    private final Logger log = LoggerFactory.getLogger(AttackService.class);
     private final PlayerRepository playerRepository;
     private final GameSessionRepository gameSessionRepository;
     private final UserRepository userRepository;
@@ -114,8 +110,6 @@ public class AttackService {
         if (player2 == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Player2 not found");
         }
-        log.info("Ready check — p1(userId={}) ready={}, p2(userId={}) ready={}",
-            session.getPlayer1Id(), player1.isReady(), session.getPlayer2Id(), player2.isReady());
         if (player1.isReady() && player2.isReady()) {
             session.setGameStatus(GameStatus.BATTLE);
             session.setActivePlayerId(
