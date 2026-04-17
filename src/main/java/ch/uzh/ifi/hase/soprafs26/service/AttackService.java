@@ -1,12 +1,14 @@
 package ch.uzh.ifi.hase.soprafs26.service;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ch.uzh.ifi.hase.soprafs26.constant.Attack;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.AttackGetDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.BattleStateDTO;
 import ch.uzh.ifi.hase.soprafs26.entity.Player;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.entity.GameSession;
@@ -31,13 +33,15 @@ public class AttackService {
     private final GameSessionRepository gameSessionRepository;
     private final UserRepository userRepository;
     private final AuthenticationService authenticationService;
+    private final SimpMessagingTemplate messagingTemplate;
 
 
-    public AttackService(PlayerRepository playerRepository, GameSessionRepository gameSessionRepository, UserRepository userRepository, AuthenticationService authenticationService) {
+    public AttackService(PlayerRepository playerRepository, GameSessionRepository gameSessionRepository, UserRepository userRepository, AuthenticationService authenticationService, SimpMessagingTemplate messagingTemplate) {
         this.playerRepository = playerRepository;
         this.gameSessionRepository=gameSessionRepository;
         this.userRepository=userRepository;
         this.authenticationService = authenticationService;
+        this.messagingTemplate = messagingTemplate;
     }
 
     public List<AttackGetDTO> getAllAttacks() {
@@ -99,6 +103,7 @@ public class AttackService {
         player.setAttack3(attacks.get(2));
 
         player.setReady(true);
+        playerRepository.save(player);
 
         //set gamesession status to battle when both players are ready
         Player player1=playerRepository.findByUserId(session.getPlayer1Id());
@@ -109,12 +114,24 @@ public class AttackService {
         if (player2 == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Player2 not found");
         }
+        log.info("Ready check — p1(userId={}) ready={}, p2(userId={}) ready={}",
+            session.getPlayer1Id(), player1.isReady(), session.getPlayer2Id(), player2.isReady());
         if (player1.isReady() && player2.isReady()) {
             session.setGameStatus(GameStatus.BATTLE);
             session.setActivePlayerId(
                 Math.random() < 0.5 ? session.getPlayer1Id() : session.getPlayer2Id()
             );
             gameSessionRepository.save(session);
+
+            BattleStateDTO state = new BattleStateDTO();
+            state.setActivePlayerId(session.getActivePlayerId());
+            state.setPlayer1Hp(player1.getHp());
+            state.setPlayer2Hp(player2.getHp());
+            state.setDamageDealt(0);
+            state.setAttackUsed(null);
+            state.setGameStatus(GameStatus.BATTLE);
+            state.setWinnerId(null);
+            messagingTemplate.convertAndSend("/topic/game/" + gameCode, state);
         }
 
         return playerRepository.save(player);

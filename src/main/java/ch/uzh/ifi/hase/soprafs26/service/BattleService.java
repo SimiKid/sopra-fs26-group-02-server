@@ -13,6 +13,11 @@ import ch.uzh.ifi.hase.soprafs26.repository.GameSessionRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.BattleStateDTO;
 
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@Transactional
 public class BattleService {
     private final GameSessionRepository gameSessionRepository;
     private final PlayerRepository playerRepository;
@@ -71,6 +76,24 @@ public class BattleService {
         return (int)(attack.getBaseDamage()
                    * attacker.getWizardClass().getAttackMultiplier()
                    * weatherMultiplier);
+    }
+
+    public BattleStateDTO getCurrentState(String gameCode) {
+        GameSession session = gameSessionRepository.findByGameCode(gameCode);
+        if (session == null || session.getGameStatus() != GameStatus.BATTLE) {
+            return null;
+        }
+        Player p1 = playerRepository.findByUserId(session.getPlayer1Id());
+        Player p2 = playerRepository.findByUserId(session.getPlayer2Id());
+        BattleStateDTO dto = new BattleStateDTO();
+        dto.setActivePlayerId(session.getActivePlayerId());
+        dto.setPlayer1Hp(p1.getHp());
+        dto.setPlayer2Hp(p2.getHp());
+        dto.setDamageDealt(0);
+        dto.setAttackUsed(null);
+        dto.setGameStatus(session.getGameStatus());
+        dto.setWinnerId(session.getWinnerId());
+        return dto;
     }
 
     private BattleStateDTO buildBattleState(GameSession session, Player attacker, Player defender, int damage, String attackName) {
