@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import java.util.Optional;
-
+import java.util.Random;
 
 import ch.uzh.ifi.hase.soprafs26.entity.GameSession;
 import ch.uzh.ifi.hase.soprafs26.repository.GameSessionRepository;
@@ -19,6 +19,7 @@ import ch.uzh.ifi.hase.soprafs26.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.UserRepository;
 import ch.uzh.ifi.hase.soprafs26.constant.GameStatus;
 import ch.uzh.ifi.hase.soprafs26.constant.WizardClass;
+import ch.uzh.ifi.hase.soprafs26.constant.Location;
 import ch.uzh.ifi.hase.soprafs26.entity.Player;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
 
@@ -57,6 +58,9 @@ public class GameSessionService {
 
 	private static final int MAX_ATTEMPTS = 5;
 
+	private static final Random RANDOM = new Random();
+	private static final int SIZE = Location.values().length;
+
 	public List<GameSession> getGameSessions() {
     return this.gameSessionRepository.findAll();
 }
@@ -66,6 +70,11 @@ public class GameSessionService {
 		newGameSession.setGameStatus(GameStatus.WAITING);
 		newGameSession.setCreatedAt(LocalDateTime.now());
 		newGameSession.setActivePlayerId(newGameSession.getPlayer1Id());
+
+
+		// random location from enum
+		newGameSession.setArenaLocation(Location.values()[RANDOM.nextInt(SIZE)]);
+		// get & set weather for location
 
 		for (int i = 0; i < MAX_ATTEMPTS; i++) {
 			String code = createGameCode();
