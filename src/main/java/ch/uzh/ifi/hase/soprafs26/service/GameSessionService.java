@@ -20,8 +20,11 @@ import ch.uzh.ifi.hase.soprafs26.repository.UserRepository;
 import ch.uzh.ifi.hase.soprafs26.constant.GameStatus;
 import ch.uzh.ifi.hase.soprafs26.constant.WizardClass;
 import ch.uzh.ifi.hase.soprafs26.constant.Location;
+import ch.uzh.ifi.hase.soprafs26.constant.RainCategory;
+import ch.uzh.ifi.hase.soprafs26.constant.TemperatureCategory;
 import ch.uzh.ifi.hase.soprafs26.entity.Player;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.WeatherGetDTO;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -44,16 +47,16 @@ public class GameSessionService {
 
     private final Logger log = LoggerFactory.getLogger(GameSessionService.class);
 
-	private final UserController userController;
 	private final GameSessionRepository gameSessionRepository;
 	private final PlayerRepository playerRepository;
 	private final UserRepository userRepository;
+	private final WeatherService weatherService;
 
-	public GameSessionService(@Qualifier("gameSessionRepository") GameSessionRepository gameSessionRepository, @Qualifier("playerRepository") PlayerRepository playerRepository, UserController userController, UserRepository userRepository) {
+	public GameSessionService(@Qualifier("gameSessionRepository") GameSessionRepository gameSessionRepository, @Qualifier("playerRepository") PlayerRepository playerRepository, UserRepository userRepository, WeatherService weatherService) {
 		this.gameSessionRepository = gameSessionRepository;
 		this.playerRepository = playerRepository;
-        this.userController = userController;
 		this.userRepository = userRepository;
+		this.weatherService = weatherService;
 	}
 
 	private static final int MAX_ATTEMPTS = 5;
@@ -75,6 +78,9 @@ public class GameSessionService {
 		// random location from enum
 		newGameSession.setArenaLocation(Location.values()[RANDOM.nextInt(SIZE)]);
 		// get & set weather for location
+		WeatherGetDTO weather = weatherService.getWeatherForLocation(newGameSession.getArenaLocation());
+		newGameSession.setRain((RainCategory) weather.getRainCategory());
+		newGameSession.setTemperature((TemperatureCategory) weather.getTemperatureCategory());
 
 		for (int i = 0; i < MAX_ATTEMPTS; i++) {
 			String code = createGameCode();
@@ -228,4 +234,15 @@ public class GameSessionService {
 		
 		return playerRepository.save(player);
 	}
+
+	    public WeatherGetDTO getWeatherByCode(String gameCode) {
+        // fetch weather data for the game session with the given game code
+        GameSession gameSession = getByGameCode(gameCode);
+        
+        WeatherGetDTO weatherDTO = new WeatherGetDTO();
+        weatherDTO.setRainCategory(gameSession.getRain());
+        weatherDTO.setTemperatureCategory(gameSession.getTemperature());
+
+        return weatherDTO;
+    }
 }
