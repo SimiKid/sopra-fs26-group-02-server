@@ -9,8 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestHeader;
 
-import ch.uzh.ifi.hase.soprafs26.entity.Battle;
 import ch.uzh.ifi.hase.soprafs26.service.BattleService;
 
 @RestController
@@ -25,9 +25,8 @@ public class BattleController {
     @PostMapping("/games/{gameCode}/battles/turns")
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
-    //token muss hier noch dazu später
-    public int turnBattle(@PathVariable("gameCode") String gameCode, @RequestBody String attack) {
-        int damage = battleService.turnBattle(gameCode, attack);
-        return damage;
+    public int[] turnBattle(@RequestHeader("Authorization") String token, @PathVariable("gameCode") String gameCode, @RequestBody String attack) {
+        int[] result = battleService.turnBattle(gameCode, attack);
+        return result;
     }
 }

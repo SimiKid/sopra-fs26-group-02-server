@@ -2,6 +2,7 @@ package ch.uzh.ifi.hase.soprafs26.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestHeader;
 
 import ch.uzh.ifi.hase.soprafs26.rest.dto.WeatherGetDTO;
 import ch.uzh.ifi.hase.soprafs26.service.GameSessionService;
@@ -41,7 +42,7 @@ public class WeatherController {
             @ApiResponse(responseCode = "404", description = "Game not found, fallback to default weather")
     })
 
-    public WeatherGetDTO getWeatherForGame(@PathVariable String gameCode) {
+    public WeatherGetDTO getWeatherForGame(@PathVariable ("gameCode") String gameCode, @RequestHeader("Authorization") String token) {
         return gameSessionService.getWeatherByCode(gameCode);
     }
 }
