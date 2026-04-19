@@ -1,43 +1,45 @@
 package ch.uzh.ifi.hase.soprafs26.service;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
-
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
 import ch.uzh.ifi.hase.soprafs26.constant.Attack;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.AttackGetDTO;
+import ch.uzh.ifi.hase.soprafs26.constant.GameStatus;
+import ch.uzh.ifi.hase.soprafs26.entity.GameSession;
 import ch.uzh.ifi.hase.soprafs26.entity.Player;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
-import ch.uzh.ifi.hase.soprafs26.entity.GameSession;
-import ch.uzh.ifi.hase.soprafs26.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.GameSessionRepository;
+import ch.uzh.ifi.hase.soprafs26.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.UserRepository;
-import ch.uzh.ifi.hase.soprafs26.constant.GameStatus;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.AttackGetDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.BattleStateDTO;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
 import java.util.ArrayList;
-
-
+import java.util.List;
 
 @Service
 @Transactional
 public class AttackService {
     private final Logger log = LoggerFactory.getLogger(AttackService.class);
+
     private final PlayerRepository playerRepository;
     private final GameSessionRepository gameSessionRepository;
     private final UserRepository userRepository;
     private final AuthenticationService authenticationService;
+    private final SimpMessagingTemplate messagingTemplate;
 
-
-    public AttackService(PlayerRepository playerRepository, GameSessionRepository gameSessionRepository, UserRepository userRepository, AuthenticationService authenticationService) {
+    public AttackService(PlayerRepository playerRepository, GameSessionRepository gameSessionRepository, UserRepository userRepository, AuthenticationService authenticationService, SimpMessagingTemplate messagingTemplate) {
         this.playerRepository = playerRepository;
         this.gameSessionRepository=gameSessionRepository;
         this.userRepository=userRepository;
         this.authenticationService = authenticationService;
+        this.messagingTemplate = messagingTemplate;
     }
 
     public List<AttackGetDTO> getAllAttacks() {
@@ -76,12 +78,10 @@ public class AttackService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User is not part of this game.");
         }
 
-        //check if the currentSessionID of the user found above is the same as the one in the game session found above
         if (user.getCurrentGameSessionId() == null || !user.getCurrentGameSessionId().equals(session.getId())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not assigned to this game session in their profile.");
         }
 
-        //check if each attacks is part auf our constant Attack.java
         for (String attackId : attacks) {
             try {
                 Attack.valueOf(attackId);
@@ -97,15 +97,21 @@ public class AttackService {
         player.setAttack1(attacks.get(0));
         player.setAttack2(attacks.get(1));
         player.setAttack3(attacks.get(2));
-
         player.setReady(true);
+        playerRepository.save(player);
 
         //set gamesession status to battle when both players are ready
-        Player player1=playerRepository.findByUserId(session.getPlayer1Id());
+        Player savedPlayer = playerRepository.save(player);
+        Player player1 = playerRepository.findByUserId(session.getPlayer1Id());
         if (player1 == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Player1 not found");
         }
-        Player player2=playerRepository.findByUserId(session.getPlayer2Id());
+
+        if (session.getPlayer2Id() == null) {
+            return savedPlayer;
+        }
+
+        Player player2 = playerRepository.findByUserId(session.getPlayer2Id());
         if (player2 == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Player2 not found");
         }
@@ -115,14 +121,34 @@ public class AttackService {
                 Math.random() < 0.5 ? session.getPlayer1Id() : session.getPlayer2Id()
             );
             gameSessionRepository.save(session);
-        }
 
-        return playerRepository.save(player);
+            User user1 = userRepository.findById(session.getPlayer1Id())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User1 not found"));
+            User user2 = userRepository.findById(session.getPlayer2Id())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User2 not found"));
+
+            BattleStateDTO initialState = new BattleStateDTO();
+            initialState.setActivePlayerId(session.getActivePlayerId());
+            initialState.setPlayer1Hp(player1.getHp());
+            initialState.setPlayer2Hp(player2.getHp());
+            initialState.setDamageDealt(0);
+            initialState.setAttackUsed(null);
+            initialState.setGameStatus(session.getGameStatus());
+            initialState.setWinnerId(session.getWinnerId());
+
+            initialState.setPlayer1UserId(session.getPlayer1Id());
+            initialState.setPlayer2UserId(session.getPlayer2Id());
+            initialState.setPlayer1Username(user1.getUsername());
+            initialState.setPlayer2Username(user2.getUsername());
+            initialState.setPlayer1WizardClass(player1.getWizardClass() != null ? player1.getWizardClass().name() : "Unknown");
+            initialState.setPlayer2WizardClass(player2.getWizardClass() != null ? player2.getWizardClass().name() : "Unknown");
+
+            initialState.setLocation(session.getArenaLocation() != null ? session.getArenaLocation().name() : "Unknown");
+            initialState.setRain(session.getRain());
+            initialState.setTemperature(session.getTemperature());
+
+            messagingTemplate.convertAndSend("/topic/game/" + gameCode, initialState);
+        }
+        return savedPlayer;
     }
 }
-
-
-
-
-
-

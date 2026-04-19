@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.util.List;
 
@@ -19,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
+import java.util.Optional;
 
 class AttackServiceTest {
 
@@ -30,6 +32,9 @@ class AttackServiceTest {
     private UserRepository userRepository;
     @Mock
     private AuthenticationService authenticationService;
+
+    @Mock
+    private SimpMessagingTemplate messagingTemplate;
 
     @InjectMocks
     private AttackService attackService;
@@ -67,6 +72,16 @@ class AttackServiceTest {
     @Test
     void setAttacks_bothPlayersReady_setsGameStatusToBattleAndAssignsActivePlayer() {
         // given - player2 is now submitting their attacks, making both ready
+        User user1 = new User();
+        user1.setId(1L);
+        user1.setUsername("player1");
+
+        User user2 = new User();
+        user2.setId(2L);
+        user2.setUsername("player2");
+
+        given(userRepository.findById(1L)).willReturn(Optional.of(user1));
+        given(userRepository.findById(2L)).willReturn(Optional.of(user2));
         given(authenticationService.authenticateByToken("token-p2")).willReturn(user);
         given(gameSessionRepository.findByGameCode("ABC123")).willReturn(session);
         given(playerRepository.findByUserId(2L)).willReturn(player2);

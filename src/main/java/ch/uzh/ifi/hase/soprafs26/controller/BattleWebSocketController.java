@@ -1,0 +1,28 @@
+package ch.uzh.ifi.hase.soprafs26.controller;
+
+import org.springframework.messaging.handler.annotation.DestinationVariable;
+import org.springframework.messaging.handler.annotation.Header;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.stereotype.Controller;
+
+import ch.uzh.ifi.hase.soprafs26.service.BattleService;
+
+@Controller
+public class BattleWebSocketController {
+
+    private final BattleService battleService;
+
+    public BattleWebSocketController(BattleService battleService) {
+        this.battleService = battleService;
+    }
+
+    @MessageMapping("/game/{gameCode}/attack")
+    public void handleAttack(
+            @DestinationVariable String gameCode,
+            @Header("Authorization") String token,
+            @Payload String attackName) {
+        
+        battleService.resolveAttack(gameCode, token, attackName);
+    }
+}
