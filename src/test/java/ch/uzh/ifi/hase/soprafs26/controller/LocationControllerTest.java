@@ -43,7 +43,8 @@ class LocationControllerTest {
         locationDTO.setLocationName("ZURICH");
         given(gameSessionService.getLocationDTOByCode("ABC123")).willReturn(locationDTO);
 
-        mockMvc.perform(get("/games/ABC123/location"))
+        mockMvc.perform(get("/games/ABC123/location")
+            .header("Authorization", "test-token"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.locationName").value("ZURICH"));
 
@@ -55,7 +56,8 @@ class LocationControllerTest {
         given(gameSessionService.getLocationDTOByCode("UNKNOWN"))
             .willThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
 
-        mockMvc.perform(get("/games/UNKNOWN/location"))
+        mockMvc.perform(get("/games/UNKNOWN/location")
+            .header("Authorization", "test-token"))
             .andExpect(status().isNotFound());
     }
 }

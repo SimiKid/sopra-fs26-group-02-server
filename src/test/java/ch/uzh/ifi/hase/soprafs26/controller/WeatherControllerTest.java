@@ -48,7 +48,8 @@ class WeatherControllerTest {
 
         given(gameSessionService.getWeatherByCode("ABC123")).willReturn(dto);
 
-        mockMvc.perform(get("/games/ABC123/weather"))
+        mockMvc.perform(get("/games/ABC123/weather")
+                .header("Authorization", "test-token"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.rainCategory", is("RAINING")))
             .andExpect(jsonPath("$.temperatureCategory", is("HOT")));
@@ -61,7 +62,8 @@ class WeatherControllerTest {
         given(gameSessionService.getWeatherByCode("UNKNOWN"))
             .willThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
 
-        mockMvc.perform(get("/games/UNKNOWN/weather"))
+        mockMvc.perform(get("/games/UNKNOWN/weather")
+                .header("Authorization", "test-token"))
             .andExpect(status().isNotFound());
     }
 }
