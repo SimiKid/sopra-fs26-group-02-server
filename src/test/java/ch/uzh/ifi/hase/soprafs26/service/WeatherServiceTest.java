@@ -69,7 +69,7 @@ class WeatherServiceTest {
 
     @Test
     void getWeatherForLocation_buildsUrlWithCoordinatesAndApiKey() {
-        String apiResponse = "{\"main\":{\"temp\":9.0,\"\"pressure\\\":1015}}";
+        String apiResponse = "{\"main\":{\"temp\":9.0,\"pressure\":1015}}";
         ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
         when(restTemplate.getForObject(urlCaptor.capture(), eq(String.class))).thenReturn(apiResponse);
 

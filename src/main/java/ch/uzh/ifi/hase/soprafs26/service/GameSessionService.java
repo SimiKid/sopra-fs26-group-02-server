@@ -249,6 +249,9 @@ public class GameSessionService {
 	public LocationGetDTO getLocationDTOByCode(String gameCode) {
 		GameSession gameSession = getByGameCode(gameCode);
 		Location location = gameSession.getArenaLocation();
+		if (location == null) {
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "Arena location is not configured for this game session.");
+		}
 		LocationGetDTO locationDTO = new LocationGetDTO();
 		locationDTO.setLocationName(location.getDisplayName());
 		return locationDTO;

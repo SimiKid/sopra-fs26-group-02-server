@@ -14,7 +14,7 @@ public class BattleController {
         this.battleService = battleService;
     }
 
-    @GetMapping("/games/{gameCode}/battle")
+    @GetMapping("/games/{gameCode}/battles")
     @ResponseStatus(HttpStatus.OK)
     public BattleStateDTO getBattleState(@PathVariable("gameCode") String gameCode) {
         return battleService.getBattleState(gameCode);

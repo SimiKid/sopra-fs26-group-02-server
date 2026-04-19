@@ -37,11 +37,15 @@ jobs:
   deploy:
     name: Deploying to Google Cloud
     runs-on: ubuntu-latest
-    # needs: test
 
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+
+      # The API key is stored in GitHub Secrets and injected into the app.yaml file before deployment.
+      - name: Inject API key into app.yaml
+        run: |
+          sed -i "s|OPENWEATHER_API_KEY: .*|OPENWEATHER_API_KEY: '${{ secrets.OPENWEATHER_API_KEY }}'|" app.yaml
 
       - name: Deploy to App Engine
         id: deploy
@@ -50,9 +54,7 @@ jobs:
           deliverables: app.yaml
           version: v1
           credentials: ${{ secrets.GCP_SERVICE_CREDENTIALS }}
-          project_id: ${{ secrets.GCP_PROJECT_ID }} 
-        env:
-          OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY }}
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
 
       - name: Test
         run: curl "${{ steps.deploy.outputs.url }}"
