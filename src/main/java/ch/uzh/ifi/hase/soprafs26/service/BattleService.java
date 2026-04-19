@@ -2,6 +2,7 @@ package ch.uzh.ifi.hase.soprafs26.service;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import ch.uzh.ifi.hase.soprafs26.constant.Attack;
@@ -12,7 +13,7 @@ import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.repository.GameSessionRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.BattleStateDTO;
-
+@Service
 public class BattleService {
     private final GameSessionRepository gameSessionRepository;
     private final PlayerRepository playerRepository;
@@ -85,4 +86,32 @@ public class BattleService {
         return dto;
     }
 
+    public BattleStateDTO getBattleState(String gameCode) {
+        GameSession session = gameSessionRepository.findByGameCode(gameCode);
+        if (session == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found.");
+        }
+
+        if (session.getPlayer2Id() == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Battle not ready yet.");
+        }
+
+        Player player1 = playerRepository.findByUserId(session.getPlayer1Id());
+        Player player2 = playerRepository.findByUserId(session.getPlayer2Id());
+
+        if (player1 == null || player2 == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Players not found.");
+        }
+
+        BattleStateDTO dto = new BattleStateDTO();
+        dto.setActivePlayerId(session.getActivePlayerId());
+        dto.setPlayer1Hp(player1.getHp());
+        dto.setPlayer2Hp(player2.getHp());
+        dto.setDamageDealt(0);
+        dto.setAttackUsed(null);
+        dto.setGameStatus(session.getGameStatus());
+        dto.setWinnerId(session.getWinnerId());
+
+        return dto;
+    }
 }
