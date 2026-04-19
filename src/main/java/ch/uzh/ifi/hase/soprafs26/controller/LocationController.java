@@ -3,6 +3,7 @@ package ch.uzh.ifi.hase.soprafs26.controller;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import ch.uzh.ifi.hase.soprafs26.rest.dto.LocationGetDTO;
 import ch.uzh.ifi.hase.soprafs26.service.GameSessionService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -40,7 +41,7 @@ public class LocationController {
             @ApiResponse(responseCode = "404", description = "Game not found")
     })
 
-    public String getLocationForGame(@PathVariable String gameCode) {
-        return gameSessionService.getLocationByCode(gameCode);
+    public LocationGetDTO getLocationForGame(@PathVariable String gameCode) {
+        return gameSessionService.getLocationDTOByCode(gameCode);
     }
 }

@@ -24,6 +24,7 @@ import ch.uzh.ifi.hase.soprafs26.constant.TemperatureCategory;
 import ch.uzh.ifi.hase.soprafs26.entity.Player;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.WeatherGetDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.LocationGetDTO;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -245,8 +246,11 @@ public class GameSessionService {
 	return weatherDTO;
 	}
 
-	public String getLocationByCode(String gameCode) {
+	public LocationGetDTO getLocationDTOByCode(String gameCode) {
 		GameSession gameSession = getByGameCode(gameCode);
-		return gameSession.getArenaLocation().name();
+		Location location = gameSession.getArenaLocation();
+		LocationGetDTO locationDTO = new LocationGetDTO();
+		locationDTO.setLocationName(location.getDisplayName());
+		return locationDTO;
 	}
 }
