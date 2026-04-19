@@ -43,7 +43,6 @@ public class GameSessionService {
 
     private final Logger log = LoggerFactory.getLogger(GameSessionService.class);
 
-	private final UserController userController;
 	private final GameSessionRepository gameSessionRepository;
 	private final PlayerRepository playerRepository;
 	private final UserRepository userRepository;
@@ -51,7 +50,6 @@ public class GameSessionService {
 	public GameSessionService(@Qualifier("gameSessionRepository") GameSessionRepository gameSessionRepository, @Qualifier("playerRepository") PlayerRepository playerRepository, UserController userController, UserRepository userRepository) {
 		this.gameSessionRepository = gameSessionRepository;
 		this.playerRepository = playerRepository;
-        this.userController = userController;
 		this.userRepository = userRepository;
 	}
 

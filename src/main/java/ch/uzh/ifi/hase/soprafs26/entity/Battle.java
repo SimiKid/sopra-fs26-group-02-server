@@ -41,7 +41,7 @@ public class Battle implements Serializable {
 
     private double weatherModifier;
 
-    private LocalDateTime  timeStamp;
+    private LocalDateTime timeStamp;
 
     // getters and setters
     public Long getId() {
