@@ -5,6 +5,7 @@ import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.messaging.SessionSubscribeEvent;
+import org.springframework.web.server.ResponseStatusException;
 
 import ch.uzh.ifi.hase.soprafs26.rest.dto.BattleStateDTO;
 import ch.uzh.ifi.hase.soprafs26.service.BattleService;
@@ -25,9 +26,11 @@ public class GameSubscriptionListener {
         String dest = SimpMessageHeaderAccessor.wrap(event.getMessage()).getDestination();
         if (dest != null && dest.startsWith("/topic/game/")) {
             String gameCode = dest.substring("/topic/game/".length());
-            BattleStateDTO state = battleService.getCurrentState(gameCode);
-            if (state != null) {
+            try {
+                BattleStateDTO state = battleService.getBattleState(gameCode);
                 messagingTemplate.convertAndSend(dest, state);
+            } catch (ResponseStatusException e) {   
+                // Battle not ready yet or game not found
             }
         }
     }
