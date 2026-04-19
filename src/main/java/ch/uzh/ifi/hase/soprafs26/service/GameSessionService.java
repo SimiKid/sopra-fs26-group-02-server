@@ -1,6 +1,5 @@
 package ch.uzh.ifi.hase.soprafs26.service;
 
-import ch.uzh.ifi.hase.soprafs26.controller.UserController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -11,7 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import java.util.Optional;
-
+import java.util.Random;
 
 import ch.uzh.ifi.hase.soprafs26.entity.GameSession;
 import ch.uzh.ifi.hase.soprafs26.repository.GameSessionRepository;
@@ -19,8 +18,13 @@ import ch.uzh.ifi.hase.soprafs26.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.UserRepository;
 import ch.uzh.ifi.hase.soprafs26.constant.GameStatus;
 import ch.uzh.ifi.hase.soprafs26.constant.WizardClass;
+import ch.uzh.ifi.hase.soprafs26.constant.Location;
+import ch.uzh.ifi.hase.soprafs26.constant.RainCategory;
+import ch.uzh.ifi.hase.soprafs26.constant.TemperatureCategory;
 import ch.uzh.ifi.hase.soprafs26.entity.Player;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.WeatherGetDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.LocationGetDTO;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -46,14 +50,19 @@ public class GameSessionService {
 	private final GameSessionRepository gameSessionRepository;
 	private final PlayerRepository playerRepository;
 	private final UserRepository userRepository;
+	private final WeatherService weatherService;
 
-	public GameSessionService(@Qualifier("gameSessionRepository") GameSessionRepository gameSessionRepository, @Qualifier("playerRepository") PlayerRepository playerRepository, UserController userController, UserRepository userRepository) {
+	public GameSessionService(@Qualifier("gameSessionRepository") GameSessionRepository gameSessionRepository, @Qualifier("playerRepository") PlayerRepository playerRepository, UserRepository userRepository, WeatherService weatherService) {
 		this.gameSessionRepository = gameSessionRepository;
 		this.playerRepository = playerRepository;
 		this.userRepository = userRepository;
+		this.weatherService = weatherService;
 	}
 
 	private static final int MAX_ATTEMPTS = 5;
+
+	private static final Random RANDOM = new Random();
+	private static final int SIZE = Location.values().length;
 
 	public List<GameSession> getGameSessions() {
     return this.gameSessionRepository.findAll();
@@ -64,6 +73,14 @@ public class GameSessionService {
 		newGameSession.setGameStatus(GameStatus.WAITING);
 		newGameSession.setCreatedAt(LocalDateTime.now());
 		newGameSession.setActivePlayerId(newGameSession.getPlayer1Id());
+
+
+		// random location from enum
+		newGameSession.setArenaLocation(Location.values()[RANDOM.nextInt(SIZE)]);
+		// get & set weather for location
+		WeatherGetDTO weather = weatherService.getWeatherForLocation(newGameSession.getArenaLocation());
+		newGameSession.setRain((RainCategory) weather.getRainCategory());
+		newGameSession.setTemperature((TemperatureCategory) weather.getTemperatureCategory());
 
 		for (int i = 0; i < MAX_ATTEMPTS; i++) {
 			String code = createGameCode();
@@ -216,5 +233,24 @@ public class GameSessionService {
 		player.setHp((int)(100 * wc.getHpMultiplier()));
 		
 		return playerRepository.save(player);
+	}
+
+	public WeatherGetDTO getWeatherByCode(String gameCode) {
+	// fetch weather data for the game session with the given game code
+	GameSession gameSession = getByGameCode(gameCode);
+	
+	WeatherGetDTO weatherDTO = new WeatherGetDTO();
+	weatherDTO.setRainCategory(gameSession.getRain());
+	weatherDTO.setTemperatureCategory(gameSession.getTemperature());
+
+	return weatherDTO;
+	}
+
+	public LocationGetDTO getLocationDTOByCode(String gameCode) {
+		GameSession gameSession = getByGameCode(gameCode);
+		Location location = gameSession.getArenaLocation();
+		LocationGetDTO locationDTO = new LocationGetDTO();
+		locationDTO.setLocationName(location.getDisplayName());
+		return locationDTO;
 	}
 }

@@ -14,6 +14,11 @@ import ch.uzh.ifi.hase.soprafs26.repository.GameSessionRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.UserRepository;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.BattleStateDTO;
+import ch.uzh.ifi.hase.soprafs26.constant.Element;
+import ch.uzh.ifi.hase.soprafs26.constant.WeatherModifier;
+import ch.uzh.ifi.hase.soprafs26.constant.TemperatureCategory;
+import ch.uzh.ifi.hase.soprafs26.constant.RainCategory;
+import java.util.Map;
 
 import org.springframework.transaction.annotation.Transactional;
 
@@ -62,7 +67,7 @@ public class BattleService {
         Player defender = playerRepository.findByUserId(defenderId);
 
         Attack attack = Attack.valueOf(attackName);
-        int damage = calculateDamage(attack, attacker, 1.0); // 1.0 = weather placeholder for #54
+        int damage = calculateDamage(attack, attacker, session);
 
         defender.setHp(defender.getHp() - damage);
         playerRepository.save(defender);
@@ -80,10 +85,19 @@ public class BattleService {
         messagingTemplate.convertAndSend("/topic/game/" + gameCode, state);
     }
 
-    private int calculateDamage(Attack attack, Player attacker, double weatherMultiplier) {
+    private int calculateDamage(Attack attack, Player attacker, GameSession session) {
+        Element element = attack.getElement();
+        TemperatureCategory temperature = session.getTemperature();
+        RainCategory rain = session.getRain();
+
+        Map<Object, Double> elementMatrix = WeatherModifier.ELEMENT_MODIFIERS.get(element);
+        double tempFactor = elementMatrix.getOrDefault(temperature, 1.0);
+        double rainFactor = elementMatrix.getOrDefault(rain, 1.0);
+        double weatherModifier = tempFactor * rainFactor;
+
         return (int)(attack.getBaseDamage()
                    * attacker.getWizardClass().getAttackMultiplier()
-                   * weatherMultiplier);
+                   * weatherModifier);
     }
 
     public BattleStateDTO getBattleState(String gameCode) {

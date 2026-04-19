@@ -2,7 +2,6 @@ package ch.uzh.ifi.hase.soprafs26.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-
 import ch.uzh.ifi.hase.soprafs26.rest.dto.BattleStateDTO;
 import ch.uzh.ifi.hase.soprafs26.service.BattleService;
 
@@ -17,8 +16,15 @@ public class BattleController {
 
     @GetMapping("/games/{gameCode}/battle")
     @ResponseStatus(HttpStatus.OK)
-    @ResponseBody
     public BattleStateDTO getBattleState(@PathVariable("gameCode") String gameCode) {
         return battleService.getBattleState(gameCode);
+    }
+
+    @PostMapping("/games/{gameCode}/battles/turns")
+    @ResponseStatus(HttpStatus.OK)
+    public void resolveAttack(@RequestHeader("Authorization") String token,
+                              @PathVariable("gameCode") String gameCode,
+                              @RequestBody String attack) {
+        battleService.resolveAttack(gameCode, token, attack);
     }
 }
