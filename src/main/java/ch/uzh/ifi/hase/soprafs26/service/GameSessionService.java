@@ -1,6 +1,5 @@
 package ch.uzh.ifi.hase.soprafs26.service;
 
-import ch.uzh.ifi.hase.soprafs26.controller.UserController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -235,14 +234,19 @@ public class GameSessionService {
 		return playerRepository.save(player);
 	}
 
-	    public WeatherGetDTO getWeatherByCode(String gameCode) {
-        // fetch weather data for the game session with the given game code
-        GameSession gameSession = getByGameCode(gameCode);
-        
-        WeatherGetDTO weatherDTO = new WeatherGetDTO();
-        weatherDTO.setRainCategory(gameSession.getRain());
-        weatherDTO.setTemperatureCategory(gameSession.getTemperature());
+	public WeatherGetDTO getWeatherByCode(String gameCode) {
+	// fetch weather data for the game session with the given game code
+	GameSession gameSession = getByGameCode(gameCode);
+	
+	WeatherGetDTO weatherDTO = new WeatherGetDTO();
+	weatherDTO.setRainCategory(gameSession.getRain());
+	weatherDTO.setTemperatureCategory(gameSession.getTemperature());
 
-        return weatherDTO;
-    }
+	return weatherDTO;
+	}
+
+	public String getLocationByCode(String gameCode) {
+		GameSession gameSession = getByGameCode(gameCode);
+		return gameSession.getArenaLocation().name();
+	}
 }
