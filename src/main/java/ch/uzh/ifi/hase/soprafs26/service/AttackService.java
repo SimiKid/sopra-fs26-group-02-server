@@ -121,6 +121,11 @@ public class AttackService {
             );
             gameSessionRepository.save(session);
 
+            User user1 = userRepository.findById(session.getPlayer1Id())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User1 not found"));
+            User user2 = userRepository.findById(session.getPlayer2Id())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User2 not found"));
+
             BattleStateDTO initialState = new BattleStateDTO();
             initialState.setActivePlayerId(session.getActivePlayerId());
             initialState.setPlayer1Hp(player1.getHp());
@@ -130,6 +135,16 @@ public class AttackService {
             initialState.setGameStatus(session.getGameStatus());
             initialState.setWinnerId(session.getWinnerId());
 
+            initialState.setPlayer1UserId(session.getPlayer1Id());
+            initialState.setPlayer2UserId(session.getPlayer2Id());
+            initialState.setPlayer1Username(user1.getUsername());
+            initialState.setPlayer2Username(user2.getUsername());
+            initialState.setPlayer1WizardClass(player1.getWizardClass() != null ? player1.getWizardClass().name() : "Unknown");
+            initialState.setPlayer2WizardClass(player2.getWizardClass() != null ? player2.getWizardClass().name() : "Unknown");
+
+            initialState.setLocation(session.getArenaLocation() != null ? session.getArenaLocation().name() : "Unknown");
+            initialState.setRain(session.getRain());
+            initialState.setTemperature(session.getTemperature());
 
             messagingTemplate.convertAndSend("/topic/game/" + gameCode, initialState);
         }
