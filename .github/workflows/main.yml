@@ -51,6 +51,8 @@ jobs:
           version: v1
           credentials: ${{ secrets.GCP_SERVICE_CREDENTIALS }}
           project_id: ${{ secrets.GCP_PROJECT_ID }} 
+        env:
+          OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY }}
 
       - name: Test
         run: curl "${{ steps.deploy.outputs.url }}"
