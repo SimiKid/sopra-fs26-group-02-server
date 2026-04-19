@@ -2,6 +2,8 @@ package ch.uzh.ifi.hase.soprafs26.service;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import ch.uzh.ifi.hase.soprafs26.constant.Attack;
@@ -16,6 +18,8 @@ import ch.uzh.ifi.hase.soprafs26.rest.dto.BattleStateDTO;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Service
+@Transactional
 @Service
 @Transactional
 public class BattleService {

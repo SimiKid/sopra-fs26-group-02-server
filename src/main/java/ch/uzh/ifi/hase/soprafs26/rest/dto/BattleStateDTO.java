@@ -1,5 +1,7 @@
 package ch.uzh.ifi.hase.soprafs26.rest.dto;
 
+import java.time.LocalDateTime;
+
 import ch.uzh.ifi.hase.soprafs26.constant.GameStatus;
 
 public class BattleStateDTO {
@@ -11,6 +13,7 @@ public class BattleStateDTO {
     private String attackUsed;
     private GameStatus gameStatus;
     private Long winnerId;
+    private LocalDateTime turnStartedAt;
 
     public Long getActivePlayerId() {
         return activePlayerId; 
@@ -59,5 +62,13 @@ public class BattleStateDTO {
     }
     public void setWinnerId(Long winnerId) { 
         this.winnerId = winnerId; 
+    }
+
+    public LocalDateTime getTurnStartedAt(){
+        return turnStartedAt;
+    }
+    
+    public void setTurnStartedAt(LocalDateTime turnStartedAt){
+        this.turnStartedAt = turnStartedAt;
     }
 }
