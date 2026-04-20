@@ -10,6 +10,7 @@ import ch.uzh.ifi.hase.soprafs26.rest.dto.PlayerGetDTO;
 import ch.uzh.ifi.hase.soprafs26.entity.Player;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 @RestController
@@ -24,7 +25,9 @@ public class AttackController {
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
     public List<AttackGetDTO> getAttacks() {
-        return attackService.getAllAttacks();
+        return attackService.getAllAttacks().stream()
+            .map(DTOMapper.INSTANCE::convertAttackToAttackGetDTO)
+            .collect(Collectors.toList());
     }
     
     @PutMapping("/games/{gameCode}/attacks")

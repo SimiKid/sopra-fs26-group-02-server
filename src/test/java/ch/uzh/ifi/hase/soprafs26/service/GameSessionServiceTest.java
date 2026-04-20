@@ -2,6 +2,8 @@
 package ch.uzh.ifi.hase.soprafs26.service;
 
 import ch.uzh.ifi.hase.soprafs26.constant.GameStatus;
+import ch.uzh.ifi.hase.soprafs26.constant.RainCategory;
+import ch.uzh.ifi.hase.soprafs26.constant.TemperatureCategory;
 import ch.uzh.ifi.hase.soprafs26.constant.WizardClass;
 import ch.uzh.ifi.hase.soprafs26.entity.GameSession;
 import ch.uzh.ifi.hase.soprafs26.entity.Player;
@@ -9,6 +11,7 @@ import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.repository.GameSessionRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.UserRepository;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.WeatherGetDTO;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,6 +39,9 @@ class GameSessionServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private WeatherService weatherService;
 
     @InjectMocks
     private GameSessionService gameSessionService;
@@ -70,6 +76,10 @@ class GameSessionServiceTest {
     void createGameSession_validInput_setsDefaultsAndSaves() {
         GameSession input = new GameSession();
         input.setPlayer1Id(67L);
+        WeatherGetDTO weather = new WeatherGetDTO();
+        weather.setRainCategory(RainCategory.CLEAR);
+        weather.setTemperatureCategory(TemperatureCategory.NEUTRAL);
+        when(weatherService.getWeatherForLocation(any())).thenReturn(weather);
 
         when(gameSessionRepository.existsByGameCode(any())).thenReturn(false);
         when(gameSessionRepository.save(any(GameSession.class))).thenAnswer(invocation -> {

@@ -2,7 +2,6 @@ package ch.uzh.ifi.hase.soprafs26.controller;
 
 import ch.uzh.ifi.hase.soprafs26.Interceptor.AuthInterceptor;
 import ch.uzh.ifi.hase.soprafs26.constant.Attack;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.AttackGetDTO;
 import ch.uzh.ifi.hase.soprafs26.service.AttackService;
 import ch.uzh.ifi.hase.soprafs26.entity.Player;
 
@@ -23,8 +22,6 @@ import static org.mockito.ArgumentMatchers.any;
 
 
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.hamcrest.Matchers.is;
 import static org.mockito.BDDMockito.given;
@@ -51,22 +48,9 @@ public class AttackControllerTest {
         Mockito.when(authInterceptor.preHandle(any(), any(), any())).thenReturn(true);
     }
 
-    private static AttackGetDTO toDto(Attack attack) {
-        AttackGetDTO dto = new AttackGetDTO();
-        dto.setId(attack.getId());
-        dto.setName(attack.getDisplayName());
-        dto.setBaseDamage(attack.getBaseDamage());
-        dto.setElement(attack.getElement());
-        dto.setDescription(attack.getDescription());
-        return dto;
-    }
-
     @Test
     void getAttacks_returnsOkAndBodyFromService() throws Exception {
-        List<AttackGetDTO> attacks = Stream.of(Attack.values())
-            .map(AttackControllerTest::toDto)
-            .collect(Collectors.toList());
-        given(attackService.getAllAttacks()).willReturn(attacks);
+        given(attackService.getAllAttacks()).willReturn(List.of(Attack.values()));
 
         Attack sample = Attack.values()[0];
 

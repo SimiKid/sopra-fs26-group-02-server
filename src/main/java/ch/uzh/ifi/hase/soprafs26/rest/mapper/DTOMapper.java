@@ -2,13 +2,14 @@ package ch.uzh.ifi.hase.soprafs26.rest.mapper;
 
 import org.mapstruct.*;
 import org.mapstruct.factory.Mappers;
-import org.springframework.context.annotation.Bean;
 
 import ch.uzh.ifi.hase.soprafs26.entity.User;
+import ch.uzh.ifi.hase.soprafs26.constant.Attack;
 import ch.uzh.ifi.hase.soprafs26.entity.GameSession;
 import ch.uzh.ifi.hase.soprafs26.entity.Player;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserPostDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.AttackGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.GameSessionGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.GameSessionPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.PlayerGetDTO;
@@ -52,4 +53,10 @@ public interface DTOMapper {
 
 	@BeanMapping(unmappedTargetPolicy = ReportingPolicy.IGNORE) // ignore unmapped target properties until they are implemented
 	PlayerGetDTO convertEntityToPlayerGetDTO(Player player);
+
+	@Mapping(source = "displayName", target = "name")
+	@Mapping(source = "baseDamage", target = "baseDamage")
+	@Mapping(source = "element", target = "element")
+	@Mapping(source = "description", target = "description")
+	AttackGetDTO convertAttackToAttackGetDTO(Attack attack);
 }
