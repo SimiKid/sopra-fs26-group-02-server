@@ -11,6 +11,7 @@ import ch.uzh.ifi.hase.soprafs26.constant.Location;
 import ch.uzh.ifi.hase.soprafs26.constant.RainCategory;
 import ch.uzh.ifi.hase.soprafs26.constant.TemperatureCategory;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.WeatherGetDTO;
+import ch.uzh.ifi.hase.soprafs26.entity.WeatherData;
 
 import java.util.Arrays;
 import java.util.List;
@@ -38,9 +39,9 @@ public class WeatherService {
         TemperatureCategory temperatureCategory;
 
         try {
-            List<Double> weatherData = fetchWeatherFromAPI(location);
-            rainCategory = categorizeRain(weatherData.get(0));
-            temperatureCategory = categorizeTemperature(weatherData.get(1));
+            WeatherData weatherData = fetchWeatherFromAPI(location);
+            rainCategory = categorizeRain(weatherData.getRain());  // Clear and explicit
+            temperatureCategory = categorizeTemperature(weatherData.getTemperature());
 
         } catch (Exception e) {
             log.error("Weather API call failed for location {}", location, e);
@@ -61,7 +62,7 @@ public class WeatherService {
         return weatherDTO;
     }
 
-    private List<Double> fetchWeatherFromAPI(Location location) {
+    private WeatherData fetchWeatherFromAPI(Location location) {
         float lat = location.getLatitude();
         float lon = location.getLongitude();
 
@@ -80,6 +81,7 @@ public class WeatherService {
         String response = restTemplate.getForObject(url, String.class);
         // log.info("RAW API RESPONSE: {}", response);
         
+        WeatherData weatherData = new WeatherData();
         double temp = 0;
         double rain = 0;
 
@@ -87,13 +89,22 @@ public class WeatherService {
             String tempStr = response.split("\"temp\":")[1].split(",")[0];
             temp = Double.parseDouble(tempStr);
         }
+        else {
+            temp = 15; // default value if temp is not found in response
+        }
 
         if (response.contains("\"rain\"")) {
             String rainStr = response.split("\"1h\":")[1].split("}")[0];
             rain = Double.parseDouble(rainStr);
         }
+        else {
+            rain = 0; // default value if rain is not found in response
+        }
 
-        return Arrays.asList(rain, temp);
+
+        weatherData.setRain(rain);
+        weatherData.setTemperature(temp);
+        return weatherData;
     }
 
     private RainCategory categorizeRain(double rain) {
