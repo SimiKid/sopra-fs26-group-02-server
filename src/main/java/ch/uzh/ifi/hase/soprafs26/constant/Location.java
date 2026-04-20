@@ -54,7 +54,9 @@ public enum Location {
     BANGKOK("Bangkok", 13.75f, 100.50f),
     PERTH("Perth", -31.95f, 115.86f),
     LIMA("Lima", -12.04f, -77.03f),
-    SANTIAGO("Santiago", -33.45f, -70.66f);
+    SANTIAGO("Santiago", -33.45f, -70.66f),
+    // Fallback location has to be the last entry in the enum, otherwise the random selection of locations could return it
+    FALLBACK("Fallback Location, random weather", 0.0f, 0.0f);
 
     private final String displayName;
     private final float latitude;

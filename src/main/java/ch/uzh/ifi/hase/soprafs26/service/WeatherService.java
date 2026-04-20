@@ -12,9 +12,8 @@ import ch.uzh.ifi.hase.soprafs26.constant.RainCategory;
 import ch.uzh.ifi.hase.soprafs26.constant.TemperatureCategory;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.WeatherGetDTO;
 import ch.uzh.ifi.hase.soprafs26.entity.WeatherData;
+import ch.uzh.ifi.hase.soprafs26.entity.GameSession;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.Random;
 
 @Service
@@ -30,31 +29,25 @@ public class WeatherService {
     private static final int RAINSIZE = RainCategory.values().length;
     private static final int TEMPSIZE = TemperatureCategory.values().length;
 
-    public WeatherGetDTO getWeatherForLocation(Location location) {
+    public WeatherGetDTO getWeatherForLocation(GameSession gameSession, Location location) {
         // fetch weather data from external API
         // if call fails, return random weather data
         // processes and returns weather data
-
-        RainCategory rainCategory;
-        TemperatureCategory temperatureCategory;
-
         try {
             WeatherData weatherData = fetchWeatherFromAPI(location);
-            rainCategory = categorizeRain(weatherData.getRain());  // Clear and explicit
-            temperatureCategory = categorizeTemperature(weatherData.getTemperature());
-
+            WeatherGetDTO weatherDTO = new WeatherGetDTO();
+            weatherDTO.setRainCategory(categorizeRain(weatherData.getRain()));
+            weatherDTO.setTemperatureCategory(categorizeTemperature(weatherData.getTemperature()));
+            return weatherDTO;
         } catch (Exception e) {
             log.error("Weather API call failed for location {}", location, e);
-            return fallbackWeather();
+            return fallbackWeather(gameSession);
         }
-
-        WeatherGetDTO weatherDTO = new WeatherGetDTO();
-        weatherDTO.setRainCategory(rainCategory);
-        weatherDTO.setTemperatureCategory(temperatureCategory);
-        return weatherDTO;
     }
 
-    private WeatherGetDTO fallbackWeather() {
+    private WeatherGetDTO fallbackWeather(GameSession gameSession) {
+        gameSession.setArenaLocation(Location.FALLBACK);
+
         WeatherGetDTO weatherDTO = new WeatherGetDTO();
         // random values from the enums
         weatherDTO.setRainCategory(RainCategory.values()[RANDOM.nextInt(RAINSIZE)]);

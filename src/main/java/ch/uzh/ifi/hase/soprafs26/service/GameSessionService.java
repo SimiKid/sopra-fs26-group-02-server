@@ -62,7 +62,7 @@ public class GameSessionService {
 	private static final int MAX_ATTEMPTS = 5;
 
 	private static final Random RANDOM = new Random();
-	private static final int SIZE = Location.values().length;
+	private static final int LOCSIZE = Location.values().length - 1; // exclude fallback location
 
 	public List<GameSession> getGameSessions() {
     return this.gameSessionRepository.findAll();
@@ -76,9 +76,9 @@ public class GameSessionService {
 
 
 		// random location from enum
-		newGameSession.setArenaLocation(Location.values()[RANDOM.nextInt(SIZE)]);
+		newGameSession.setArenaLocation(Location.values()[RANDOM.nextInt(LOCSIZE)]);
 		// get & set weather for location
-		WeatherGetDTO weather = weatherService.getWeatherForLocation(newGameSession.getArenaLocation());
+		WeatherGetDTO weather = weatherService.getWeatherForLocation(newGameSession, newGameSession.getArenaLocation());
 		newGameSession.setRain((RainCategory) weather.getRainCategory());
 		newGameSession.setTemperature((TemperatureCategory) weather.getTemperatureCategory());
 
