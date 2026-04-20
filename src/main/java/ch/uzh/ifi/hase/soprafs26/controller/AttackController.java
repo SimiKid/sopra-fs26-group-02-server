@@ -34,9 +34,17 @@ public class AttackController {
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
     public PlayerGetDTO setAttacks(@RequestHeader("Authorization") String token, @PathVariable("gameCode") String gameCode, @RequestBody List<String> attacks) {
-        
+
         Player updatedPlayer = attackService.setAttacks(gameCode, attacks, token);
 
         return DTOMapper.INSTANCE.convertEntityToPlayerGetDTO(updatedPlayer);
+    }
+
+    @GetMapping("/games/{gameCode}/attacks")
+    @ResponseStatus(HttpStatus.OK)
+    @ResponseBody
+    public PlayerGetDTO getSelectedAttacks(@RequestHeader("Authorization") String token, @PathVariable("gameCode") String gameCode) {
+        Player player = attackService.getAttacks(gameCode, token);
+        return DTOMapper.INSTANCE.convertEntityToPlayerGetDTO(player);
     }
 }

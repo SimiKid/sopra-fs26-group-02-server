@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Transactional
@@ -45,6 +46,23 @@ public class AttackService {
 
     public List<Attack> getAllAttacks() {
         return List.of(Attack.values());
+    }
+
+    public Player getAttacks(String gameCode, String token) {
+        User user = authenticationService.authenticateByToken(token);
+
+        GameSession session = Optional.ofNullable(gameSessionRepository.findByGameCode(gameCode))
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found."));
+
+        if (!user.getId().equals(session.getPlayer1Id()) && !user.getId().equals(session.getPlayer2Id())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not part of this game.");
+        }
+
+        Player player = playerRepository.findByUserId(user.getId());
+        if (player == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Player not found for the given user in this game.");
+        }
+        return player;
     }
     
   
