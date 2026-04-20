@@ -14,6 +14,7 @@ import ch.uzh.ifi.hase.soprafs26.rest.dto.WeatherGetDTO;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 
 @Service
 public class WeatherService {
@@ -24,10 +25,13 @@ public class WeatherService {
     private String apiKey;
 
     private final RestTemplate restTemplate = new RestTemplate();
+    private static final Random RANDOM = new Random();
+    private static final int RAINSIZE = RainCategory.values().length;
+    private static final int TEMPSIZE = TemperatureCategory.values().length;
 
     public WeatherGetDTO getWeatherForLocation(Location location) {
         // fetch weather data from external API
-        // if call fails, return default weather data (clear and neutral)
+        // if call fails, return random weather data
         // processes and returns weather data
 
         RainCategory rainCategory;
@@ -40,7 +44,7 @@ public class WeatherService {
 
         } catch (Exception e) {
             log.error("Weather API call failed for location {}", location, e);
-            return defaultWeather();
+            return fallbackWeather();
         }
 
         WeatherGetDTO weatherDTO = new WeatherGetDTO();
@@ -49,10 +53,11 @@ public class WeatherService {
         return weatherDTO;
     }
 
-    private WeatherGetDTO defaultWeather() {
+    private WeatherGetDTO fallbackWeather() {
         WeatherGetDTO weatherDTO = new WeatherGetDTO();
-        weatherDTO.setRainCategory(RainCategory.CLEAR);
-        weatherDTO.setTemperatureCategory(TemperatureCategory.NEUTRAL);
+        // random values from the enums
+        weatherDTO.setRainCategory(RainCategory.values()[RANDOM.nextInt(RAINSIZE)]);
+        weatherDTO.setTemperatureCategory(TemperatureCategory.values()[RANDOM.nextInt(TEMPSIZE)]);
         return weatherDTO;
     }
 
