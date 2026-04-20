@@ -23,7 +23,7 @@ public class WeatherGetDTO {
 
     public TemperatureCategory getTemperatureCategory() {
         return temperatureCategory;
-    }
+    }   
 
     public void setTemperatureCategory(TemperatureCategory temperature) {
         this.temperatureCategory = temperature;
