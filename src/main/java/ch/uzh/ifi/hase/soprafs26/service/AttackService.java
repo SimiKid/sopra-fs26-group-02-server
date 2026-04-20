@@ -42,20 +42,9 @@ public class AttackService {
         this.messagingTemplate = messagingTemplate;
     }
 
-    public List<AttackGetDTO> getAllAttacks() {
-        List<AttackGetDTO> attackDTOs = new ArrayList<>();
-        for (Attack attack : Attack.values()) {
-            AttackGetDTO dto = new AttackGetDTO();
-            dto.setId(attack.getId());
-            dto.setName(attack.getDisplayName());
-            dto.setBaseDamage(attack.getBaseDamage());
-            dto.setElement(attack.getElement());
-            dto.setDescription(attack.getDescription());
-            attackDTOs.add(dto);
-            }
-            return attackDTOs;
-        }
-
+    public List<Attack> getAllAttacks() {
+        return List.of(Attack.values());
+    }
     
   
     public Player setAttacks(String gameCode, List<String> attacks, String token) {

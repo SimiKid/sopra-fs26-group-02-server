@@ -19,12 +19,4 @@ public class BattleController {
     public BattleStateDTO getBattleState(@PathVariable("gameCode") String gameCode) {
         return battleService.getBattleState(gameCode);
     }
-
-    @PostMapping("/games/{gameCode}/battles/turns")
-    @ResponseStatus(HttpStatus.OK)
-    public void resolveAttack(@RequestHeader("Authorization") String token,
-                              @PathVariable("gameCode") String gameCode,
-                              @RequestBody String attack) {
-        battleService.resolveAttack(gameCode, token, attack);
-    }
 }
