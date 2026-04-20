@@ -107,6 +107,35 @@ class GameSessionServiceTest {
     }
 
     @Test
+    void createGameSession_savesPlayerLinkedToSession() {
+        GameSession input = new GameSession();
+        input.setPlayer1Id(67L);
+        WeatherGetDTO weather = new WeatherGetDTO();
+        weather.setRainCategory(RainCategory.CLEAR);
+        weather.setTemperatureCategory(TemperatureCategory.NEUTRAL);
+        when(weatherService.getWeatherForLocation(any())).thenReturn(weather);
+
+        when(gameSessionRepository.existsByGameCode(any())).thenReturn(false);
+        when(gameSessionRepository.save(any(GameSession.class))).thenAnswer(invocation -> {
+            GameSession gs = invocation.getArgument(0);
+            gs.setId(42L);
+            return gs;
+        });
+
+        User user = new User();
+        user.setId(67L);
+        when(userRepository.findById(67L)).thenReturn(Optional.of(user));
+
+        gameSessionService.createGameSession(input);
+
+        ArgumentCaptor<Player> playerCaptor = ArgumentCaptor.forClass(Player.class);
+        verify(playerRepository).save(playerCaptor.capture());
+        Player saved = playerCaptor.getValue();
+        assertEquals(67L, saved.getUserId());
+        assertEquals(42L, saved.getGameSessionId());
+    }
+
+    @Test
     void getByGameCode_existing_returnsGame() {
         GameSession existing = new GameSession();
         existing.setGameCode("ABC123");
