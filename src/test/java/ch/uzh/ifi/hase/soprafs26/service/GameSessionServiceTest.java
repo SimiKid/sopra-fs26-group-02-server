@@ -5,6 +5,7 @@ import ch.uzh.ifi.hase.soprafs26.constant.GameStatus;
 import ch.uzh.ifi.hase.soprafs26.constant.RainCategory;
 import ch.uzh.ifi.hase.soprafs26.constant.TemperatureCategory;
 import ch.uzh.ifi.hase.soprafs26.constant.WizardClass;
+import ch.uzh.ifi.hase.soprafs26.constant.Location;
 import ch.uzh.ifi.hase.soprafs26.entity.GameSession;
 import ch.uzh.ifi.hase.soprafs26.entity.Player;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
@@ -80,8 +81,7 @@ class GameSessionServiceTest {
         WeatherGetDTO weather = new WeatherGetDTO();
         weather.setRainCategory(RainCategory.CLEAR);
         weather.setTemperatureCategory(TemperatureCategory.NEUTRAL);
-        when(weatherService.getWeatherForLocation(any())).thenReturn(weather);
-
+        when(weatherService.getWeatherForLocation(any(GameSession.class), any(Location.class))).thenReturn(weather);
         when(gameSessionRepository.existsByGameCode(any())).thenReturn(false);
         when(gameSessionRepository.save(any(GameSession.class))).thenAnswer(invocation -> {
             GameSession gs = invocation.getArgument(0);
@@ -113,7 +113,7 @@ class GameSessionServiceTest {
         WeatherGetDTO weather = new WeatherGetDTO();
         weather.setRainCategory(RainCategory.CLEAR);
         weather.setTemperatureCategory(TemperatureCategory.NEUTRAL);
-        when(weatherService.getWeatherForLocation(any())).thenReturn(weather);
+        when(weatherService.getWeatherForLocation(any(GameSession.class), any(Location.class))).thenReturn(weather);
 
         when(gameSessionRepository.existsByGameCode(any())).thenReturn(false);
         when(gameSessionRepository.save(any(GameSession.class))).thenAnswer(invocation -> {
