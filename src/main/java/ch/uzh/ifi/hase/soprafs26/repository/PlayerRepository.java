@@ -7,5 +7,5 @@ import ch.uzh.ifi.hase.soprafs26.entity.Player;
 
 @Repository("playerRepository")
 public interface PlayerRepository extends JpaRepository<Player, Long> {
-    Player findByUserId(Long userId);
+    Player findByUserIdAndGameSessionId(Long userId, Long gameSessionId);
 }

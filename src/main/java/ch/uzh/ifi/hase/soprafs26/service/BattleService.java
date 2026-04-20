@@ -74,7 +74,7 @@ public class BattleService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "It's not your turn.");
         }
 
-        Player attacker = playerRepository.findByUserId(session.getActivePlayerId());
+        Player attacker = playerRepository.findByUserIdAndGameSessionId(session.getActivePlayerId(), session.getId());
 
         Long defenderId;
         if (session.getPlayer1Id().equals(session.getActivePlayerId())) {
@@ -83,7 +83,7 @@ public class BattleService {
             defenderId = session.getPlayer1Id();
         }
 
-        Player defender = playerRepository.findByUserId(defenderId);
+        Player defender = playerRepository.findByUserIdAndGameSessionId(defenderId, session.getId());
 
         Attack attack = Attack.valueOf(attackName);
         int damage = calculateDamage(attack, attacker, session);
@@ -135,8 +135,8 @@ public class BattleService {
 
 
     private BattleStateDTO buildBattleState(GameSession session, int damage, String attackName) {
-        Player player1 = playerRepository.findByUserId(session.getPlayer1Id());
-        Player player2 = playerRepository.findByUserId(session.getPlayer2Id());
+        Player player1 = playerRepository.findByUserIdAndGameSessionId(session.getPlayer1Id(), session.getId());
+        Player player2 = playerRepository.findByUserIdAndGameSessionId(session.getPlayer2Id(), session.getId());
 
         if (player1 == null || player2 == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Players not found.");
@@ -178,7 +178,7 @@ public class BattleService {
         if (session == null || session.getGameStatus() != GameStatus.BATTLE) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Game not in battle phase.");
         }
-        Player attacker = playerRepository.findByUserId(session.getActivePlayerId());
+        Player attacker = playerRepository.findByUserIdAndGameSessionId(session.getActivePlayerId(), session.getId());
 
         List<String> playerAttacks = new ArrayList<>();
         playerAttacks.add(attacker.getAttack1());
@@ -194,7 +194,7 @@ public class BattleService {
             defenderId = session.getPlayer1Id();
         }
 
-        Player defender = playerRepository.findByUserId(defenderId);
+        Player defender = playerRepository.findByUserIdAndGameSessionId(defenderId, session.getId());
 
         int damage = calculateDamage(Attack.valueOf(attackName), attacker, session);
 

@@ -27,6 +27,9 @@ public class Player implements Serializable {
     @Column(nullable = false)
     private Long userId;
 
+    @Column(nullable = false)
+    private Long gameSessionId;
+
     @Enumerated(EnumType.STRING)
     private WizardClass wizardClass;
 
@@ -62,6 +65,14 @@ public class Player implements Serializable {
 
     public void setUserId(Long userId) {
         this.userId = userId;
+    }
+
+    public Long getGameSessionId() {
+        return gameSessionId;
+    }
+
+    public void setGameSessionId(Long gameSessionId) {
+        this.gameSessionId = gameSessionId;
     }
 
     public WizardClass getWizardClass() {

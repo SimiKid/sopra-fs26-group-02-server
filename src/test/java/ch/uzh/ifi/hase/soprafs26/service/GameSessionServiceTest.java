@@ -55,6 +55,7 @@ class GameSessionServiceTest {
     void setup() {
         MockitoAnnotations.openMocks(this);
         gameSession = new GameSession();
+        gameSession.setId(1L);
         gameSession.setGameCode("ABC123");
         gameSession.setGameStatus(GameStatus.CONFIGURING);
         gameSession.setPlayer1Id(1L);
@@ -103,6 +104,35 @@ class GameSessionServiceTest {
 
         verify(gameSessionRepository, times(1)).save(any(GameSession.class));
         verify(gameSessionRepository, times(1)).flush();
+    }
+
+    @Test
+    void createGameSession_savesPlayerLinkedToSession() {
+        GameSession input = new GameSession();
+        input.setPlayer1Id(67L);
+        WeatherGetDTO weather = new WeatherGetDTO();
+        weather.setRainCategory(RainCategory.CLEAR);
+        weather.setTemperatureCategory(TemperatureCategory.NEUTRAL);
+        when(weatherService.getWeatherForLocation(any())).thenReturn(weather);
+
+        when(gameSessionRepository.existsByGameCode(any())).thenReturn(false);
+        when(gameSessionRepository.save(any(GameSession.class))).thenAnswer(invocation -> {
+            GameSession gs = invocation.getArgument(0);
+            gs.setId(42L);
+            return gs;
+        });
+
+        User user = new User();
+        user.setId(67L);
+        when(userRepository.findById(67L)).thenReturn(Optional.of(user));
+
+        gameSessionService.createGameSession(input);
+
+        ArgumentCaptor<Player> playerCaptor = ArgumentCaptor.forClass(Player.class);
+        verify(playerRepository).save(playerCaptor.capture());
+        Player saved = playerCaptor.getValue();
+        assertEquals(67L, saved.getUserId());
+        assertEquals(42L, saved.getGameSessionId());
     }
 
     @Test
@@ -256,7 +286,7 @@ class GameSessionServiceTest {
         // given
         given(gameSessionRepository.findByGameCode("ABC123")).willReturn(gameSession);
         given(userRepository.findByToken("valid-token")).willReturn(user);   
-        given(playerRepository.findByUserId(1L)).willReturn(player);
+        given(playerRepository.findByUserIdAndGameSessionId(1L, 1L)).willReturn(player);
         given(playerRepository.save(any(Player.class))).willAnswer(i -> i.getArgument(0));
 
         // when
@@ -272,7 +302,7 @@ class GameSessionServiceTest {
         // given
         given(gameSessionRepository.findByGameCode("ABC123")).willReturn(gameSession);        
         given(userRepository.findByToken("valid-token")).willReturn(user);  
-        given(playerRepository.findByUserId(1L)).willReturn(player);
+        given(playerRepository.findByUserIdAndGameSessionId(1L, 1L)).willReturn(player);
         given(playerRepository.save(any(Player.class))).willAnswer(i -> i.getArgument(0));
 
         // when
@@ -327,7 +357,7 @@ class GameSessionServiceTest {
         // given
         given(gameSessionRepository.findByGameCode("ABC123")).willReturn(gameSession);
         given(userRepository.findByToken("valid-token")).willReturn(user);
-        given(playerRepository.findByUserId(1L)).willReturn(player);
+        given(playerRepository.findByUserIdAndGameSessionId(1L, 1L)).willReturn(player);
 
         // when
         ResponseStatusException exception = assertThrows(ResponseStatusException.class, () ->
