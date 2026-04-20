@@ -168,17 +168,21 @@ class GameSessionServiceTest {
     }
 
     @Test
-    void joinGameSession_invalidCodeFormat_throwsBadRequest() {
+    void joinGameSession_invalidCodeFormat_throwsNotFound() {
+        when(gameSessionRepository.findByGameCode("AB")).thenReturn(null);
+
         ResponseStatusException ex = assertThrows(ResponseStatusException.class,
                 () -> gameSessionService.joinGameSession("AB", 2L));
-        assertEquals(400, ex.getStatusCode().value());
+        assertEquals(404, ex.getStatusCode().value());
     }
 
     @Test
-    void joinGameSession_nullCode_throwsBadRequest() {
+    void joinGameSession_nullCode_throwsNotFound() {
+        when(gameSessionRepository.findByGameCode(null)).thenReturn(null);
+
         ResponseStatusException ex = assertThrows(ResponseStatusException.class,
                 () -> gameSessionService.joinGameSession(null, 2L));
-        assertEquals(400, ex.getStatusCode().value());
+        assertEquals(404, ex.getStatusCode().value());
     }
 
     @Test

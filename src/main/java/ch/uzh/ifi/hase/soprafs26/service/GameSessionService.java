@@ -120,11 +120,8 @@ public class GameSessionService {
 	}
 
 	public GameSession getByGameCode(String gameCode) {
-		GameSession gameSession = gameSessionRepository.findByGameCode(gameCode);
-		if (gameSession == null) {
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found or expired.");
-		}
-		return gameSession;
+		return Optional.ofNullable(gameSessionRepository.findByGameCode(gameCode))
+			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found or expired."));
 	}
 
     // This method creates a random 6-character game code consisting of uppercase letters and digits.
@@ -133,15 +130,8 @@ public class GameSessionService {
 		}
 
 	public GameSession joinGameSession(String gameCode, Long player2Id) {
-		if (gameCode == null || gameCode.length() != 6) {
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid game code format.");
-		}
-
-		GameSession gameSession = gameSessionRepository.findByGameCode(gameCode);
-
-		if (gameSession == null) {
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found or expired.");
-		}
+		GameSession gameSession = Optional.ofNullable(gameSessionRepository.findByGameCode(gameCode))
+			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found or expired."));
 
 		if (gameSession.getGameStatus() != GameStatus.WAITING) {
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "Game is not accepting players.");

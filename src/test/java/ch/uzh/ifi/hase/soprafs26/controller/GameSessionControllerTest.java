@@ -31,7 +31,6 @@ import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -233,7 +232,7 @@ public class GameSessionControllerTest {
         given(gameSessionService.joinGameSession("ABC123", 2L)).willReturn(joinedGame);
 
         // when
-        MockHttpServletRequestBuilder putRequest = put("/games/ABC123/join")
+        MockHttpServletRequestBuilder putRequest = post("/games/ABC123/join")
             .header("Authorization", "valid-token");
 
         // then
@@ -254,7 +253,7 @@ public class GameSessionControllerTest {
             .willThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid or expired token"));
 
         // when
-        MockHttpServletRequestBuilder putRequest = put("/games/ABC123/join")
+        MockHttpServletRequestBuilder putRequest = post("/games/ABC123/join")
             .header("Authorization", "invalid-token");
 
         // then
@@ -267,7 +266,7 @@ public class GameSessionControllerTest {
     @Test
     public void joinGameSession_missingAuthorizationHeader_badRequest() throws Exception {
         // when
-        MockHttpServletRequestBuilder putRequest = put("/games/ABC123/join");
+        MockHttpServletRequestBuilder putRequest = post("/games/ABC123/join");
 
         // then
         mockMvc.perform(putRequest)
@@ -288,7 +287,7 @@ public class GameSessionControllerTest {
             .willThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found or expired."));
 
         // when
-        MockHttpServletRequestBuilder putRequest = put("/games/NOTFND/join")
+        MockHttpServletRequestBuilder putRequest = post("/games/NOTFND/join")
             .header("Authorization", "valid-token");
 
         // then
@@ -308,7 +307,7 @@ public class GameSessionControllerTest {
             .willThrow(new ResponseStatusException(HttpStatus.CONFLICT, "Game is already full."));
 
         // when
-        MockHttpServletRequestBuilder putRequest = put("/games/ABC123/join")
+        MockHttpServletRequestBuilder putRequest = post("/games/ABC123/join")
             .header("Authorization", "valid-token");
 
         // then
