@@ -96,6 +96,7 @@ public class GameSessionService {
 				// create Player 1
 				Player player1 = new Player();
 				player1.setUserId(saved.getPlayer1Id());
+				player1.setGameSessionId(saved.getId());
 				player1.setReady(false);
 				playerRepository.save(player1);
 
@@ -154,6 +155,7 @@ public class GameSessionService {
 		// create Player 2
 		Player player2 = new Player();
 		player2.setUserId(player2Id);
+		player2.setGameSessionId(gameSession.getId());
 		player2.setReady(false);
 		playerRepository.save(player2);
 
@@ -211,7 +213,7 @@ public class GameSessionService {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not part of this game session.");
 		}
 		
-		Player player = playerRepository.findByUserId(userId);
+		Player player = playerRepository.findByUserIdAndGameSessionId(userId, gameSession.getId());
 		WizardClass wc;
 		try {
 			wc = WizardClass.valueOf(wizardClassName);

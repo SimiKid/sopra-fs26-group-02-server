@@ -58,7 +58,7 @@ public class AttackService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not part of this game.");
         }
 
-        Player player = playerRepository.findByUserId(user.getId());
+        Player player = playerRepository.findByUserIdAndGameSessionId(user.getId(), session.getId());
         if (player == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Player not found for the given user in this game.");
         }
@@ -97,11 +97,11 @@ public class AttackService {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown attack name: " + attackId);
             }
         }
-        // Find the player for this userId 
-        Player player = playerRepository.findByUserId(user.getId());
+        // Find the player for this userId
+        Player player = playerRepository.findByUserIdAndGameSessionId(user.getId(), session.getId());
         if (player == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Player not found for the given user in this game.");
-        }            
+        }
         player.setAttack1(attacks.get(0));
         player.setAttack2(attacks.get(1));
         player.setAttack3(attacks.get(2));
@@ -110,7 +110,7 @@ public class AttackService {
 
         //set gamesession status to battle when both players are ready
         Player savedPlayer = playerRepository.save(player);
-        Player player1 = playerRepository.findByUserId(session.getPlayer1Id());
+        Player player1 = playerRepository.findByUserIdAndGameSessionId(session.getPlayer1Id(), session.getId());
         if (player1 == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Player1 not found");
         }
@@ -119,7 +119,7 @@ public class AttackService {
             return savedPlayer;
         }
 
-        Player player2 = playerRepository.findByUserId(session.getPlayer2Id());
+        Player player2 = playerRepository.findByUserIdAndGameSessionId(session.getPlayer2Id(), session.getId());
         if (player2 == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Player2 not found");
         }
