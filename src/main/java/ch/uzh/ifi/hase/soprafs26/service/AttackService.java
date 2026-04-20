@@ -14,13 +14,12 @@ import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.repository.GameSessionRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.UserRepository;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.AttackGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.BattleStateDTO;
+import ch.uzh.ifi.hase.soprafs26.service.BattleService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -33,13 +32,15 @@ public class AttackService {
     private final UserRepository userRepository;
     private final AuthenticationService authenticationService;
     private final SimpMessagingTemplate messagingTemplate;
+    private final BattleService battleService;
 
-    public AttackService(PlayerRepository playerRepository, GameSessionRepository gameSessionRepository, UserRepository userRepository, AuthenticationService authenticationService, SimpMessagingTemplate messagingTemplate) {
+    public AttackService(PlayerRepository playerRepository, GameSessionRepository gameSessionRepository, UserRepository userRepository, AuthenticationService authenticationService, SimpMessagingTemplate messagingTemplate, BattleService battleService) {
         this.playerRepository = playerRepository;
         this.gameSessionRepository=gameSessionRepository;
         this.userRepository=userRepository;
         this.authenticationService = authenticationService;
         this.messagingTemplate = messagingTemplate;
+        this.battleService = battleService;
     }
 
     public List<Attack> getAllAttacks() {
@@ -109,6 +110,8 @@ public class AttackService {
             session.setActivePlayerId(
                 Math.random() < 0.5 ? session.getPlayer1Id() : session.getPlayer2Id()
             );
+        
+            battleService.startTimer(session.getGameCode());
             gameSessionRepository.save(session);
 
             User user1 = userRepository.findById(session.getPlayer1Id())
