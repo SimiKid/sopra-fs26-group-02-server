@@ -10,6 +10,7 @@ import ch.uzh.ifi.hase.soprafs26.entity.Player;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.AttackGetDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.GameHistoryEntryDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.GameSessionGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.GameSessionPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.PlayerGetDTO;
@@ -59,4 +60,11 @@ public interface DTOMapper {
 	@Mapping(source = "element", target = "element")
 	@Mapping(source = "description", target = "description")
 	AttackGetDTO convertAttackToAttackGetDTO(Attack attack);
+
+	@Mapping(source = "createdAt", target = "gameDate")
+	@Mapping(source = "arenaLocation.displayName", target = "location")
+	@Mapping(source = "temperature", target = "temperature")
+	@Mapping(source = "rain", target = "rain")
+	@BeanMapping(unmappedTargetPolicy = ReportingPolicy.IGNORE) // result + wizard classes are filled in by the service
+	GameHistoryEntryDTO convertEntityToGameHistoryEntryDTO(GameSession gameSession);
 }

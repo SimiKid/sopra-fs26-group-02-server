@@ -246,6 +246,7 @@ public class GameSessionControllerTest {
             .andExpect(jsonPath("$.activePlayerId", is(1)));
     }
 
+    
     @Test
     public void joinGameSession_invalidToken_unauthorized() throws Exception {
         // given
