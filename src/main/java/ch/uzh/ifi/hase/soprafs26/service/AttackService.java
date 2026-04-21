@@ -129,7 +129,7 @@ public class AttackService {
                 Math.random() < 0.5 ? session.getPlayer1Id() : session.getPlayer2Id()
             );
         
-            battleService.startTimer(session.getGameCode());
+            battleService.startTimer(session.getGameCode(), session);
             gameSessionRepository.save(session);
 
             User user1 = userRepository.findById(session.getPlayer1Id())
