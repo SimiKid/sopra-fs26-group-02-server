@@ -45,6 +45,13 @@ public class GameSession implements Serializable {
 
     private Long winnerId;
 
+    private boolean player1WantsRematch = false;
+
+    private boolean player2WantsRematch = false;
+
+    @Column(nullable = true, length = 6)
+    private String rematchGameCode;
+
     // getters and setters
         public Long getId() 
             { return id; }
@@ -117,4 +124,28 @@ public class GameSession implements Serializable {
         
         public void setWinnerId(Long winnerId) 
             { this.winnerId = winnerId; }
+
+        public boolean getPlayer1WantsRematch(){
+            return player1WantsRematch;
+        }
+
+        public void setPlayer1WantsRematch(boolean player1WantsRematch){
+            this.player1WantsRematch = player1WantsRematch;
+        }
+
+        public boolean getPlayer2WantsRematch(){
+            return player2WantsRematch;
+        }
+
+        public void setPlayer2WantsRematch(boolean player2WantsRematch){
+            this.player2WantsRematch = player2WantsRematch;
+        }
+
+        public String getRematchGameCode(){
+            return rematchGameCode;
+        }
+
+        public void setRematchGameCode(String rematchGameCode){
+            this.rematchGameCode = rematchGameCode;
+        }
 }
