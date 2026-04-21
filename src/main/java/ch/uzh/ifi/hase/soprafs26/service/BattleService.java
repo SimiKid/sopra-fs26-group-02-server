@@ -114,6 +114,14 @@ public class BattleService {
         if (defender.getHp() <= 0) {
             session.setGameStatus(GameStatus.FINISHED);
             session.setWinnerId(user.getId());
+            User attackerUser = userRepository.findById(attacker.getUserId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Attacker user not found."));
+            attackerUser.setCurrentGameSessionId(null);
+            userRepository.save(attackerUser);
+            User defenderUser = userRepository.findById(defender.getUserId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Defender user not found."));
+            defenderUser.setCurrentGameSessionId(null);
+            userRepository.save(defenderUser);
         } else {
             session.setActivePlayerId(defenderId);
             startTimer(gameCode);
@@ -251,6 +259,14 @@ public class BattleService {
         if (defender.getHp() <= 0) {
             session.setGameStatus(GameStatus.FINISHED);
             session.setWinnerId(user.getId());
+            User attackerUser = userRepository.findById(attacker.getUserId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Attacker user not found."));
+            attackerUser.setCurrentGameSessionId(null);
+            userRepository.save(attackerUser);
+            User defenderUser = userRepository.findById(defender.getUserId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Defender user not found."));
+            defenderUser.setCurrentGameSessionId(null);
+            userRepository.save(defenderUser);
         } else {
             session.setActivePlayerId(defenderId);
             startTimer(gameCode);
