@@ -59,7 +59,7 @@ public class BattleService {
         this.authenticationService = authenticationService;
         this.messagingTemplate = messagingTemplate;
         this.userRepository = userRepository;
-        this .battleRepository = battleRepository;
+        this.battleRepository = battleRepository;
     }
 
     public void resolveAttack(String gameCode, String token, String attackName){
@@ -103,11 +103,15 @@ public class BattleService {
         defender.setHp(defender.getHp() - damage);
         playerRepository.save(defender);
 
-        if (defender.getHp() <= 0 && battleRepository.countTurnsByGameId(session.getId()) % 2 == 0) {
-            if (attacker.getHp() == defender.getHp()) {
-                session.setWinnerId(null); // draw
-            } else {
+        boolean isEvenTurn = battleRepository.countTurnsByGameId(session.getId()) % 2 == 0;
+        boolean battleEndedAfterRound = isEvenTurn && (attacker.getHp() <= 0 || defender.getHp() <= 0);
+        if (battleEndedAfterRound) {
+            if (attacker.getHp() > defender.getHp()) {
                 session.setWinnerId(attacker.getUserId()); // Attacker wins
+            } else if (defender.getHp() > attacker.getHp()) {
+                session.setWinnerId(defender.getUserId()); // Defender wins
+            } else {
+                session.setWinnerId(null); // Draw
             }
             // Clear current game session for both players
             session.setGameStatus(GameStatus.FINISHED);
@@ -206,10 +210,16 @@ public class BattleService {
         weatherDTO.setTemperatureCategory(session.getTemperature());
 
         BattleResultGetDTO result = new BattleResultGetDTO();
-        result.setWinnerUserId(session.getWinnerId());
-        Long loserUserId = session.getWinnerId().equals(session.getPlayer1Id())
-            ? session.getPlayer2Id()
-            : session.getPlayer1Id();
+	
+        // draw results in null winner and loser
+        Long winnerUserId = session.getWinnerId();
+        result.setWinnerUserId(winnerUserId);
+        Long loserUserId = null;
+        if (winnerUserId != null) {
+            loserUserId = winnerUserId.equals(session.getPlayer1Id())
+                ? session.getPlayer2Id()
+                : session.getPlayer1Id();
+        }
         result.setLoserUserId(loserUserId);
 
         Integer totalDamage = battleRepository.sumDamageByGameId(session.getId());
