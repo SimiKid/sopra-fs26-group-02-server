@@ -4,6 +4,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import ch.uzh.ifi.hase.soprafs26.entity.User;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.GameHistoryEntryDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
@@ -14,6 +15,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+
+import java.util.List;
 
 
 /**
@@ -94,4 +97,17 @@ public List<UserGetDTO> getAllUsers() {
 	// 1. Add '@RequestHeader("Authorization") String token' as a method parameter.
 	// 2. Call 'authenticationService.authenticateByToken(token);' as the first line of the method.
 	// If the token is invalid or missing, an UNAUTHORIZED (401) exception will be thrown automatically.
+
+	@GetMapping("/users/me/games")
+	@ResponseStatus(HttpStatus.OK)
+	@ResponseBody
+	@Operation(summary = "Get my game history", description = "Returns the authenticated user's finished games, most recent first")
+	@ApiResponses(value = {
+		@ApiResponse(responseCode = "200", description = "Game history returned"),
+		@ApiResponse(responseCode = "401", description = "Missing or invalid token")
+	})
+	public List<GameHistoryEntryDTO> getMyGameHistory(@RequestHeader("Authorization") String token) {
+		User user = authenticationService.authenticateByToken(token);
+		return userService.getGameHistory(user.getId());
+	}
 }

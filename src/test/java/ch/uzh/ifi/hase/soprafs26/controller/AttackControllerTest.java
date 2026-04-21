@@ -113,4 +113,51 @@ public class AttackControllerTest {
                 .content(new ObjectMapper().writeValueAsString(shortList)))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    void getSelectedAttacks_success_returnsOk() throws Exception {
+        String gameCode = "G123";
+        String token = "test-token";
+        Long userId = 1L;
+
+        Player player = new Player();
+        player.setUserId(userId);
+        player.setAttack1("FIREBALL");
+        player.setAttack2("ICE_SHIELD");
+        player.setAttack3("HEAL");
+        player.setReady(true);
+
+        given(attackService.getAttacks(eq(gameCode), eq(token))).willReturn(player);
+
+        mockMvc.perform(get("/games/" + gameCode + "/attacks")
+                .header("Authorization", token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.userId", is(userId.intValue())))
+                .andExpect(jsonPath("$.attacks[0]", is("FIREBALL")))
+                .andExpect(jsonPath("$.attacks[1]", is("ICE_SHIELD")))
+                .andExpect(jsonPath("$.attacks[2]", is("HEAL")))
+                .andExpect(jsonPath("$.ready", is(true)));
+
+        verify(attackService).getAttacks(eq(gameCode), eq(token));
+    }
+
+    @Test
+    void getSelectedAttacks_gameNotFound_returnsNotFound() throws Exception {
+        given(attackService.getAttacks(any(), any()))
+            .willThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found."));
+
+        mockMvc.perform(get("/games/NOPE/attacks")
+                .header("Authorization", "test-token"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void getSelectedAttacks_userNotInGame_returnsForbidden() throws Exception {
+        given(attackService.getAttacks(any(), any()))
+            .willThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not part of this game."));
+
+        mockMvc.perform(get("/games/G123/attacks")
+                .header("Authorization", "test-token"))
+                .andExpect(status().isForbidden());
+    }
 }

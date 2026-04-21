@@ -3,11 +3,16 @@ package ch.uzh.ifi.hase.soprafs26.controller;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 import ch.uzh.ifi.hase.soprafs26.Interceptor.AuthInterceptor;
+import ch.uzh.ifi.hase.soprafs26.constant.GameResult;
 import ch.uzh.ifi.hase.soprafs26.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.GameHistoryEntryDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserPostDTO;
 import ch.uzh.ifi.hase.soprafs26.service.AuthenticationService;
 import ch.uzh.ifi.hase.soprafs26.service.UserService;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,6 +28,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import static org.hamcrest.Matchers.is;
 import static org.mockito.BDDMockito.given;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -176,6 +182,40 @@ public class UserControllerTest {
 
 		// then
 		mockMvc.perform(postRequest)
+				.andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	public void getMyGameHistory_validToken_returnsEntries() throws Exception {
+		User user = new User();
+		user.setId(1L);
+		user.setToken("valid-token");
+
+		GameHistoryEntryDTO entry = new GameHistoryEntryDTO();
+		entry.setGameDate(LocalDateTime.of(2026, 4, 5, 12, 0));
+		entry.setLocation("Zurich");
+		entry.setResult(GameResult.WIN);
+		entry.setMyWizardClass("ATTACKWIZARD");
+		entry.setOpponentWizardClass("TANKWIZARD");
+
+		given(authenticationService.authenticateByToken("valid-token")).willReturn(user);
+		given(userService.getGameHistory(1L)).willReturn(List.of(entry));
+
+		mockMvc.perform(get("/users/me/games").header("Authorization", "valid-token"))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.length()", is(1)))
+				.andExpect(jsonPath("$[0].location", is("Zurich")))
+				.andExpect(jsonPath("$[0].result", is("WIN")))
+				.andExpect(jsonPath("$[0].myWizardClass", is("ATTACKWIZARD")))
+				.andExpect(jsonPath("$[0].opponentWizardClass", is("TANKWIZARD")));
+	}
+
+	@Test
+	public void getMyGameHistory_invalidToken_returnsUnauthorized() throws Exception {
+		given(authenticationService.authenticateByToken("bad-token"))
+				.willThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token"));
+
+		mockMvc.perform(get("/users/me/games").header("Authorization", "bad-token"))
 				.andExpect(status().isUnauthorized());
 	}
 

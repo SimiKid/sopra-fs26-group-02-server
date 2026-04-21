@@ -25,8 +25,21 @@ import ch.uzh.ifi.hase.soprafs26.constant.RainCategory;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.time.Instant;
+import java.util.concurrent.ConcurrentHashMap;
+import org.springframework.scheduling.TaskScheduler;
+import org.springframework.scheduling.concurrent.ConcurrentTaskScheduler;
+import java.util.concurrent.Executors;
+import ch.uzh.ifi.hase.soprafs26.service.UserService;
+import java.time.LocalDateTime;
 import org.springframework.transaction.annotation.Transactional;
+import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.GameSessionGetDTO;
 
 @Service
 @Transactional
@@ -37,24 +50,30 @@ public class BattleService {
     private final SimpMessagingTemplate messagingTemplate;
     private final UserRepository userRepository;
     private final BattleRepository battleRepository;
+    private final Map<String, ScheduledFuture<?>> activeTimers = new ConcurrentHashMap<>();
+    private final TaskScheduler taskScheduler = new ConcurrentTaskScheduler(Executors.newScheduledThreadPool(2));
+    private final UserService userService;
 
     public BattleService(GameSessionRepository gameSessionRepository,
                          PlayerRepository playerRepository,
                          AuthenticationService authenticationService,
                          SimpMessagingTemplate messagingTemplate,
                          UserRepository userRepository,
-                         BattleRepository battleRepository) {
+                         BattleRepository battleRepository,
+                         UserService userService) {
         this.gameSessionRepository = gameSessionRepository;
         this.playerRepository = playerRepository;
         this.authenticationService = authenticationService;
         this.messagingTemplate = messagingTemplate;
         this.userRepository = userRepository;
         this .battleRepository = battleRepository;
+        this.userService = userService;
     }
 
     public void resolveAttack(String gameCode, String token, String attackName){
         User user = authenticationService.authenticateByToken(token);
         GameSession session = gameSessionRepository.findByGameCode(gameCode);
+        stopTimer(gameCode);
 
         if (session == null || session.getGameStatus() != GameStatus.BATTLE) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Game not in battle phase.");
@@ -64,7 +83,7 @@ public class BattleService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "It's not your turn.");
         }
 
-        Player attacker = playerRepository.findByUserId(session.getActivePlayerId());
+        Player attacker = playerRepository.findByUserIdAndGameSessionId(session.getActivePlayerId(), session.getId());
 
         Long defenderId;
         if (session.getPlayer1Id().equals(session.getActivePlayerId())) {
@@ -73,7 +92,7 @@ public class BattleService {
             defenderId = session.getPlayer1Id();
         }
 
-        Player defender = playerRepository.findByUserId(defenderId);
+        Player defender = playerRepository.findByUserIdAndGameSessionId(defenderId, session.getId());
 
         Attack attack = Attack.valueOf(attackName);
         int damage = calculateDamage(attack, attacker, session);
@@ -97,6 +116,7 @@ public class BattleService {
             session.setWinnerId(user.getId());
         } else {
             session.setActivePlayerId(defenderId);
+            startTimer(gameCode);
         }
 
         gameSessionRepository.save(session);
@@ -135,8 +155,8 @@ public class BattleService {
 
 
     private BattleStateDTO buildBattleState(GameSession session, int damage, String attackName) {
-        Player player1 = playerRepository.findByUserId(session.getPlayer1Id());
-        Player player2 = playerRepository.findByUserId(session.getPlayer2Id());
+        Player player1 = playerRepository.findByUserIdAndGameSessionId(session.getPlayer1Id(), session.getId());
+        Player player2 = playerRepository.findByUserIdAndGameSessionId(session.getPlayer2Id(), session.getId());
 
         if (player1 == null || player2 == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Players not found.");
@@ -166,7 +186,7 @@ public class BattleService {
         dto.setLocation(session.getArenaLocation() != null ? session.getArenaLocation().name() : "Unknown");
         dto.setRain(session.getRain());
         dto.setTemperature(session.getTemperature());
-
+        
         return dto;
     }
 
@@ -197,4 +217,66 @@ public class BattleService {
 
         return result;
     } 
+    public void resolveSystemAttack(String gameCode) {
+        GameSession session = gameSessionRepository.findByGameCode(gameCode);
+        User user = userRepository.findById(session.getActivePlayerId())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found."));
+        
+        if (session == null || session.getGameStatus() != GameStatus.BATTLE) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Game not in battle phase.");
+        }
+        Player attacker = playerRepository.findByUserIdAndGameSessionId(session.getActivePlayerId(), session.getId());
+
+        List<String> playerAttacks = new ArrayList<>();
+        playerAttacks.add(attacker.getAttack1());
+        playerAttacks.add(attacker.getAttack2());
+        playerAttacks.add(attacker.getAttack3());
+        
+        String attackName = playerAttacks.get((int) (Math.random() * 3));
+        
+        Long defenderId;
+        if (session.getPlayer1Id().equals(session.getActivePlayerId())) {
+            defenderId = session.getPlayer2Id();
+        } else {
+            defenderId = session.getPlayer1Id();
+        }
+
+        Player defender = playerRepository.findByUserIdAndGameSessionId(defenderId, session.getId());
+
+        int damage = calculateDamage(Attack.valueOf(attackName), attacker, session);
+
+        defender.setHp(defender.getHp() - damage);
+        playerRepository.save(defender);
+
+        if (defender.getHp() <= 0) {
+            session.setGameStatus(GameStatus.FINISHED);
+            session.setWinnerId(user.getId());
+        } else {
+            session.setActivePlayerId(defenderId);
+            startTimer(gameCode);
+        }
+
+        gameSessionRepository.save(session);
+
+        BattleStateDTO state = buildBattleState(session, damage, attackName);
+        messagingTemplate.convertAndSend("/topic/game/" + gameCode, state);
+    }
+
+    private void stopTimer(String gameCode) {
+        ScheduledFuture<?> timer = activeTimers.remove(gameCode);
+        if (timer != null) {
+            timer.cancel(false); 
+        }
+    }
+    
+    public void startTimer(String gameCode) {
+        stopTimer(gameCode);
+        
+        ScheduledFuture<?> task = taskScheduler.schedule(() -> {
+            resolveSystemAttack(gameCode);
+        }, Instant.now().plusSeconds(30));
+        
+        activeTimers.put(gameCode, task);
+    }
+
 }

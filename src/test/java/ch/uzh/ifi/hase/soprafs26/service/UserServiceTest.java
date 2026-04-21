@@ -9,9 +9,24 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.springframework.web.server.ResponseStatusException;
 
+import ch.uzh.ifi.hase.soprafs26.constant.GameResult;
+import ch.uzh.ifi.hase.soprafs26.constant.GameStatus;
+import ch.uzh.ifi.hase.soprafs26.constant.Location;
+import ch.uzh.ifi.hase.soprafs26.constant.RainCategory;
+import ch.uzh.ifi.hase.soprafs26.constant.TemperatureCategory;
 import ch.uzh.ifi.hase.soprafs26.constant.UserStatus;
+import ch.uzh.ifi.hase.soprafs26.constant.WizardClass;
+import ch.uzh.ifi.hase.soprafs26.entity.GameSession;
+import ch.uzh.ifi.hase.soprafs26.entity.Player;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
+import ch.uzh.ifi.hase.soprafs26.repository.GameSessionRepository;
+import ch.uzh.ifi.hase.soprafs26.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.UserRepository;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.GameHistoryEntryDTO;
+
+import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -19,6 +34,12 @@ public class UserServiceTest {
 
 	@Mock
 	private UserRepository userRepository;
+
+	@Mock
+	private GameSessionRepository gameSessionRepository;
+
+	@Mock
+	private PlayerRepository playerRepository;
 
 	@InjectMocks
 	private UserService userService;
@@ -77,4 +98,74 @@ public class UserServiceTest {
 		assertThrows(ResponseStatusException.class, () -> userService.createUser(testUser));
 	}
 
+	@Test
+	public void getGameHistory_emptyHistory_returnsEmptyList() {
+		Mockito.when(gameSessionRepository.findFinishedGamesForUser(1L))
+			.thenReturn(Collections.emptyList());
+
+		List<GameHistoryEntryDTO> result = userService.getGameHistory(1L);
+
+		assertTrue(result.isEmpty());
+	}
+
+	@Test
+	public void getGameHistory_winLossDraw_mappedCorrectlyAndPreservesOrder() {
+		GameSession won = historySession(10L, 1L, 2L, 1L, LocalDateTime.of(2026, 4, 3, 12, 0));
+		GameSession lost = historySession(11L, 1L, 3L, 3L, LocalDateTime.of(2026, 4, 2, 12, 0));
+		GameSession drawn = historySession(12L, 4L, 1L, null, LocalDateTime.of(2026, 4, 1, 12, 0));
+
+		Mockito.when(gameSessionRepository.findFinishedGamesForUser(1L))
+			.thenReturn(List.of(won, lost, drawn));
+		Mockito.when(playerRepository.findByUserIdAndGameSessionId(Mockito.anyLong(), Mockito.anyLong()))
+			.thenReturn(null);
+
+		List<GameHistoryEntryDTO> result = userService.getGameHistory(1L);
+
+		assertEquals(3, result.size());
+		assertEquals(GameResult.WIN, result.get(0).getResult());
+		assertEquals(GameResult.LOSS, result.get(1).getResult());
+		assertEquals(GameResult.DRAW, result.get(2).getResult());
+	}
+
+	@Test
+	public void getGameHistory_includesWizardClassesAndWeather() {
+		GameSession session = historySession(20L, 1L, 2L, 1L, LocalDateTime.of(2026, 4, 5, 12, 0));
+		session.setArenaLocation(Location.ZURICH);
+		session.setTemperature(TemperatureCategory.HOT);
+		session.setRain(RainCategory.RAINING);
+
+		Player me = new Player();
+		me.setUserId(1L);
+		me.setGameSessionId(20L);
+		me.setWizardClass(WizardClass.ATTACKWIZARD);
+
+		Player opp = new Player();
+		opp.setUserId(2L);
+		opp.setGameSessionId(20L);
+		opp.setWizardClass(WizardClass.TANKWIZARD);
+
+		Mockito.when(gameSessionRepository.findFinishedGamesForUser(1L)).thenReturn(List.of(session));
+		Mockito.when(playerRepository.findByUserIdAndGameSessionId(1L, 20L)).thenReturn(me);
+		Mockito.when(playerRepository.findByUserIdAndGameSessionId(2L, 20L)).thenReturn(opp);
+
+		GameHistoryEntryDTO entry = userService.getGameHistory(1L).get(0);
+
+		assertEquals("Zurich", entry.getLocation());
+		assertEquals("ATTACKWIZARD", entry.getMyWizardClass());
+		assertEquals("TANKWIZARD", entry.getOpponentWizardClass());
+		assertEquals(TemperatureCategory.HOT, entry.getTemperature());
+		assertEquals(RainCategory.RAINING, entry.getRain());
+		assertEquals(LocalDateTime.of(2026, 4, 5, 12, 0), entry.getGameDate());
+	}
+
+	private GameSession historySession(Long id, Long player1Id, Long player2Id, Long winnerId, LocalDateTime createdAt) {
+		GameSession s = new GameSession();
+		s.setId(id);
+		s.setPlayer1Id(player1Id);
+		s.setPlayer2Id(player2Id);
+		s.setWinnerId(winnerId);
+		s.setCreatedAt(createdAt);
+		s.setGameStatus(GameStatus.FINISHED);
+		return s;
+	}
 }

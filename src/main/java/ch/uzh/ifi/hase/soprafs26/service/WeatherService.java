@@ -11,9 +11,10 @@ import ch.uzh.ifi.hase.soprafs26.constant.Location;
 import ch.uzh.ifi.hase.soprafs26.constant.RainCategory;
 import ch.uzh.ifi.hase.soprafs26.constant.TemperatureCategory;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.WeatherGetDTO;
+import ch.uzh.ifi.hase.soprafs26.entity.WeatherData;
+import ch.uzh.ifi.hase.soprafs26.entity.GameSession;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.Random;
 
 @Service
 public class WeatherService {
@@ -24,39 +25,37 @@ public class WeatherService {
     private String apiKey;
 
     private final RestTemplate restTemplate = new RestTemplate();
+    private static final Random RANDOM = new Random();
+    private static final int RAINSIZE = RainCategory.values().length;
+    private static final int TEMPSIZE = TemperatureCategory.values().length;
 
-    public WeatherGetDTO getWeatherForLocation(Location location) {
+    public WeatherGetDTO getWeatherForLocation(GameSession gameSession, Location location) {
         // fetch weather data from external API
-        // if call fails, return default weather data (clear and neutral)
+        // if call fails, return random weather data
         // processes and returns weather data
-
-        RainCategory rainCategory;
-        TemperatureCategory temperatureCategory;
-
         try {
-            List<Double> weatherData = fetchWeatherFromAPI(location);
-            rainCategory = categorizeRain(weatherData.get(0));
-            temperatureCategory = categorizeTemperature(weatherData.get(1));
-
+            WeatherData weatherData = fetchWeatherFromAPI(location);
+            WeatherGetDTO weatherDTO = new WeatherGetDTO();
+            weatherDTO.setRainCategory(categorizeRain(weatherData.getRain()));
+            weatherDTO.setTemperatureCategory(categorizeTemperature(weatherData.getTemperature()));
+            return weatherDTO;
         } catch (Exception e) {
             log.error("Weather API call failed for location {}", location, e);
-            return defaultWeather();
+            return fallbackWeather(gameSession);
         }
+    }
+
+    private WeatherGetDTO fallbackWeather(GameSession gameSession) {
+        gameSession.setArenaLocation(Location.FALLBACK);
 
         WeatherGetDTO weatherDTO = new WeatherGetDTO();
-        weatherDTO.setRainCategory(rainCategory);
-        weatherDTO.setTemperatureCategory(temperatureCategory);
+        // random values from the enums
+        weatherDTO.setRainCategory(RainCategory.values()[RANDOM.nextInt(RAINSIZE)]);
+        weatherDTO.setTemperatureCategory(TemperatureCategory.values()[RANDOM.nextInt(TEMPSIZE)]);
         return weatherDTO;
     }
 
-    private WeatherGetDTO defaultWeather() {
-        WeatherGetDTO weatherDTO = new WeatherGetDTO();
-        weatherDTO.setRainCategory(RainCategory.CLEAR);
-        weatherDTO.setTemperatureCategory(TemperatureCategory.NEUTRAL);
-        return weatherDTO;
-    }
-
-    private List<Double> fetchWeatherFromAPI(Location location) {
+    private WeatherData fetchWeatherFromAPI(Location location) {
         float lat = location.getLatitude();
         float lon = location.getLongitude();
 
@@ -75,6 +74,7 @@ public class WeatherService {
         String response = restTemplate.getForObject(url, String.class);
         // log.info("RAW API RESPONSE: {}", response);
         
+        WeatherData weatherData = new WeatherData();
         double temp = 0;
         double rain = 0;
 
@@ -82,13 +82,22 @@ public class WeatherService {
             String tempStr = response.split("\"temp\":")[1].split(",")[0];
             temp = Double.parseDouble(tempStr);
         }
+        else {
+            temp = 15; // default value if temp is not found in response
+        }
 
         if (response.contains("\"rain\"")) {
             String rainStr = response.split("\"1h\":")[1].split("}")[0];
             rain = Double.parseDouble(rainStr);
         }
+        else {
+            rain = 0; // default value if rain is not found in response
+        }
 
-        return Arrays.asList(rain, temp);
+
+        weatherData.setRain(rain);
+        weatherData.setTemperature(temp);
+        return weatherData;
     }
 
     private RainCategory categorizeRain(double rain) {

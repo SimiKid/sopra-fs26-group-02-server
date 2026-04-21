@@ -36,6 +36,9 @@ class AttackServiceTest {
     @Mock
     private SimpMessagingTemplate messagingTemplate;
 
+    @Mock
+    private BattleService battleService;
+
     @InjectMocks
     private AttackService attackService;
 
@@ -84,8 +87,8 @@ class AttackServiceTest {
         given(userRepository.findById(2L)).willReturn(Optional.of(user2));
         given(authenticationService.authenticateByToken("token-p2")).willReturn(user);
         given(gameSessionRepository.findByGameCode("ABC123")).willReturn(session);
-        given(playerRepository.findByUserId(2L)).willReturn(player2);
-        given(playerRepository.findByUserId(1L)).willReturn(player1);
+        given(playerRepository.findByUserIdAndGameSessionId(2L, 1L)).willReturn(player2);
+        given(playerRepository.findByUserIdAndGameSessionId(1L, 1L)).willReturn(player1);
         given(playerRepository.save(any(Player.class))).willAnswer(i -> i.getArgument(0));
         given(gameSessionRepository.save(any(GameSession.class))).willAnswer(i -> i.getArgument(0));
 
@@ -107,8 +110,8 @@ class AttackServiceTest {
         player1.setReady(false);
         given(authenticationService.authenticateByToken("token-p2")).willReturn(user);
         given(gameSessionRepository.findByGameCode("ABC123")).willReturn(session);
-        given(playerRepository.findByUserId(2L)).willReturn(player2);
-        given(playerRepository.findByUserId(1L)).willReturn(player1);
+        given(playerRepository.findByUserIdAndGameSessionId(2L, 1L)).willReturn(player2);
+        given(playerRepository.findByUserIdAndGameSessionId(1L, 1L)).willReturn(player1);
         given(playerRepository.save(any(Player.class))).willAnswer(i -> i.getArgument(0));
 
         // when
