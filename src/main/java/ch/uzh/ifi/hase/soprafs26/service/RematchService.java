@@ -65,10 +65,11 @@ public class RematchService {
         Long player1Id = oldSession.getPlayer1Id();
         Long player2Id = oldSession.getPlayer2Id();
 
+        gameSessionService.clearPlayerCurrentSessions(player1Id, player2Id);
+
         GameSession newSession = new GameSession();
         newSession.setPlayer1Id(player1Id);
         GameSession created = gameSessionService.createGameSession(newSession);
-
         gameSessionService.joinGameSession(created.getGameCode(), player2Id);
 
         return created.getGameCode();
