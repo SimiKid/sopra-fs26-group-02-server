@@ -111,9 +111,14 @@ public class BattleService {
         defender.setHp(defender.getHp() - damage);
         playerRepository.save(defender);
 
-        if (defender.getHp() <= 0) {
+        if (defender.getHp() <= 0 && battleRepository.countTurnsByGameId(session.getId()) % 2 == 0) {
+            if (attacker.getHp() == defender.getHp()) {
+                session.setWinnerId(null); // draw
+            } else {
+                session.setWinnerId(attacker.getUserId()); // Attacker wins
+            }
+            // Clear current game session for both players
             session.setGameStatus(GameStatus.FINISHED);
-            session.setWinnerId(user.getId());
             User attackerUser = userRepository.findById(attacker.getUserId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Attacker user not found."));
             attackerUser.setCurrentGameSessionId(null);
@@ -256,9 +261,14 @@ public class BattleService {
         defender.setHp(defender.getHp() - damage);
         playerRepository.save(defender);
 
-        if (defender.getHp() <= 0) {
+        if (defender.getHp() <= 0 && battleRepository.countTurnsByGameId(session.getId()) % 2 == 0) { // game has ended & no revenge attack
+            if (attacker.getHp() == defender.getHp()) {
+                session.setWinnerId(null); // draw
+            } else {
+                session.setWinnerId(attacker.getUserId()); // Attacker wins
+            }
             session.setGameStatus(GameStatus.FINISHED);
-            session.setWinnerId(user.getId());
+            // Clear current game session for both players
             User attackerUser = userRepository.findById(attacker.getUserId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Attacker user not found."));
             attackerUser.setCurrentGameSessionId(null);
