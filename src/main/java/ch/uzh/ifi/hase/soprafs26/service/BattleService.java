@@ -7,33 +7,34 @@ import org.springframework.web.server.ResponseStatusException;
 
 import ch.uzh.ifi.hase.soprafs26.constant.Attack;
 import ch.uzh.ifi.hase.soprafs26.constant.GameStatus;
+import ch.uzh.ifi.hase.soprafs26.entity.Battle;
 import ch.uzh.ifi.hase.soprafs26.entity.GameSession;
 import ch.uzh.ifi.hase.soprafs26.entity.Player;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.repository.GameSessionRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.PlayerRepository;
+import ch.uzh.ifi.hase.soprafs26.repository.BattleRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.UserRepository;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.BattleResultGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.BattleStateDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.WeatherGetDTO;
 import ch.uzh.ifi.hase.soprafs26.constant.Element;
 import ch.uzh.ifi.hase.soprafs26.constant.WeatherModifier;
 import ch.uzh.ifi.hase.soprafs26.constant.TemperatureCategory;
 import ch.uzh.ifi.hase.soprafs26.constant.RainCategory;
+
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.List;
 import java.util.ArrayList;
 
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.time.Instant;
 import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ConcurrentTaskScheduler;
 import java.util.concurrent.Executors;
-import ch.uzh.ifi.hase.soprafs26.service.UserService;
-import java.time.LocalDateTime;
 import org.springframework.transaction.annotation.Transactional;
-import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.GameSessionGetDTO;
 
 @Service
 @Transactional
@@ -43,22 +44,22 @@ public class BattleService {
     private final AuthenticationService authenticationService;
     private final SimpMessagingTemplate messagingTemplate;
     private final UserRepository userRepository;
+    private final BattleRepository battleRepository;
     private final Map<String, ScheduledFuture<?>> activeTimers = new ConcurrentHashMap<>();
     private final TaskScheduler taskScheduler = new ConcurrentTaskScheduler(Executors.newScheduledThreadPool(2));
-    private final UserService userService;
 
     public BattleService(GameSessionRepository gameSessionRepository,
                          PlayerRepository playerRepository,
                          AuthenticationService authenticationService,
                          SimpMessagingTemplate messagingTemplate,
                          UserRepository userRepository,
-                         UserService userService) {
+                         BattleRepository battleRepository) {
         this.gameSessionRepository = gameSessionRepository;
         this.playerRepository = playerRepository;
         this.authenticationService = authenticationService;
         this.messagingTemplate = messagingTemplate;
         this.userRepository = userRepository;
-        this.userService = userService;
+        this.battleRepository = battleRepository;
     }
 
     public void resolveAttack(String gameCode, String token, String attackName){
@@ -88,15 +89,43 @@ public class BattleService {
         Attack attack = Attack.valueOf(attackName);
         int damage = calculateDamage(attack, attacker, session);
 
+        // logging the battle for history and game stats
+        Battle battleLog = new Battle();
+        battleLog.setGameId(session.getId());
+        battleLog.setPlayer1Id(session.getPlayer1Id());
+        battleLog.setPlayer2Id(session.getPlayer2Id());
+        battleLog.setActivePlayerId(user.getId());
+        battleLog.setCurrentAction(attack);
+        battleLog.setDamageDealt(damage);
+        battleLog.setTimeStamp(LocalDateTime.now());
+        battleRepository.save(battleLog);
+
         defender.setHp(defender.getHp() - damage);
         playerRepository.save(defender);
 
-        if (defender.getHp() <= 0) {
+        boolean isEvenTurn = battleRepository.countTurnsByGameId(session.getId()) % 2 == 0;
+        boolean battleEndedAfterRound = isEvenTurn && (attacker.getHp() <= 0 || defender.getHp() <= 0);
+        if (battleEndedAfterRound) {
+            if (attacker.getHp() > defender.getHp()) {
+                session.setWinnerId(attacker.getUserId()); // Attacker wins
+            } else if (defender.getHp() > attacker.getHp()) {
+                session.setWinnerId(defender.getUserId()); // Defender wins
+            } else {
+                session.setWinnerId(null); // Draw
+            }
+            // Clear current game session for both players
             session.setGameStatus(GameStatus.FINISHED);
-            session.setWinnerId(user.getId());
+            User attackerUser = userRepository.findById(attacker.getUserId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Attacker user not found."));
+            attackerUser.setCurrentGameSessionId(null);
+            userRepository.save(attackerUser);
+            User defenderUser = userRepository.findById(defender.getUserId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Defender user not found."));
+            defenderUser.setCurrentGameSessionId(null);
+            userRepository.save(defenderUser);
         } else {
             session.setActivePlayerId(defenderId);
-            startTimer(gameCode);
+            startTimer(gameCode, session);
         }
 
         gameSessionRepository.save(session);
@@ -170,50 +199,39 @@ public class BattleService {
         return dto;
     }
 
-    public void resolveSystemAttack(String gameCode) {
+    public BattleResultGetDTO getBattleResult(String gameCode){
         GameSession session = gameSessionRepository.findByGameCode(gameCode);
-        User user = userRepository.findById(session.getActivePlayerId())
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found."));
-        
-        if (session == null || session.getGameStatus() != GameStatus.BATTLE) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Game not in battle phase.");
-        }
-        Player attacker = playerRepository.findByUserIdAndGameSessionId(session.getActivePlayerId(), session.getId());
-
-        List<String> playerAttacks = new ArrayList<>();
-        playerAttacks.add(attacker.getAttack1());
-        playerAttacks.add(attacker.getAttack2());
-        playerAttacks.add(attacker.getAttack3());
-        
-        String attackName = playerAttacks.get((int) (Math.random() * 3));
-        
-        Long defenderId;
-        if (session.getPlayer1Id().equals(session.getActivePlayerId())) {
-            defenderId = session.getPlayer2Id();
-        } else {
-            defenderId = session.getPlayer1Id();
+        if (session == null || session.getGameStatus() != GameStatus.FINISHED) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Battle not finished or not found.");
         }
 
-        Player defender = playerRepository.findByUserIdAndGameSessionId(defenderId, session.getId());
+        WeatherGetDTO weatherDTO = new WeatherGetDTO();
+        weatherDTO.setRainCategory(session.getRain());
+        weatherDTO.setTemperatureCategory(session.getTemperature());
 
-        int damage = calculateDamage(Attack.valueOf(attackName), attacker, session);
-
-        defender.setHp(defender.getHp() - damage);
-        playerRepository.save(defender);
-
-        if (defender.getHp() <= 0) {
-            session.setGameStatus(GameStatus.FINISHED);
-            session.setWinnerId(user.getId());
-        } else {
-            session.setActivePlayerId(defenderId);
-            startTimer(gameCode);
+        BattleResultGetDTO result = new BattleResultGetDTO();
+	
+        // draw results in null winner and loser
+        Long winnerUserId = session.getWinnerId();
+        result.setWinnerUserId(winnerUserId);
+        Long loserUserId = null;
+        if (winnerUserId != null) {
+            loserUserId = winnerUserId.equals(session.getPlayer1Id())
+                ? session.getPlayer2Id()
+                : session.getPlayer1Id();
         }
+        result.setLoserUserId(loserUserId);
 
-        gameSessionRepository.save(session);
+        Integer totalDamage = battleRepository.sumDamageByGameId(session.getId());
+        result.setTotalDamageDealt(totalDamage != null ? totalDamage : 0);
 
-        BattleStateDTO state = buildBattleState(session, damage, attackName);
-        messagingTemplate.convertAndSend("/topic/game/" + gameCode, state);
-    }
+        int turnsPlayed = battleRepository.countTurnsByGameId(session.getId());
+        result.setTurnsPlayed(turnsPlayed);
+        
+        result.setWeather(weatherDTO);
+
+        return result;
+    } 
 
     private void stopTimer(String gameCode) {
         ScheduledFuture<?> timer = activeTimers.remove(gameCode);
@@ -222,11 +240,27 @@ public class BattleService {
         }
     }
     
-    public void startTimer(String gameCode) {
+    public void startTimer(String gameCode, GameSession session) {
         stopTimer(gameCode);
-        
+        Player attacker = playerRepository.findByUserIdAndGameSessionId(
+            session.getActivePlayerId(),
+            session.getId()
+        );
+
         ScheduledFuture<?> task = taskScheduler.schedule(() -> {
-            resolveSystemAttack(gameCode);
+            List<String> playerAttacks = new ArrayList<>();
+            playerAttacks.add(attacker.getAttack1());
+            playerAttacks.add(attacker.getAttack2());
+            playerAttacks.add(attacker.getAttack3());
+        
+            String attackName = playerAttacks.get((int) (Math.random() * 3));
+        
+            // get the stored token of the active player from the UserRepository for the attack resolution
+            User activeUser = userRepository.findById(session.getActivePlayerId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Active user not found"));
+            String token = activeUser.getToken();
+
+            resolveAttack(gameCode, token, attackName);
         }, Instant.now().plusSeconds(30));
         
         activeTimers.put(gameCode, task);

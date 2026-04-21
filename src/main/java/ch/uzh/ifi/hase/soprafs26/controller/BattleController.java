@@ -2,6 +2,8 @@ package ch.uzh.ifi.hase.soprafs26.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+
+import ch.uzh.ifi.hase.soprafs26.rest.dto.BattleResultGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.BattleStateDTO;
 import ch.uzh.ifi.hase.soprafs26.service.BattleService;
 
@@ -19,4 +21,10 @@ public class BattleController {
     public BattleStateDTO getBattleState(@PathVariable("gameCode") String gameCode) {
         return battleService.getBattleState(gameCode);
     }
+
+    @GetMapping("/games/{gameCode}/battles/result")
+    @ResponseStatus(HttpStatus.OK)
+    public BattleResultGetDTO getBattleResult(@PathVariable("gameCode") String gameCode){
+        return battleService.getBattleResult(gameCode);
+    }        
 }
