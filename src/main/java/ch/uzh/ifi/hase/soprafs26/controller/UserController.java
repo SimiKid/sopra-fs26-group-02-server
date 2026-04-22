@@ -3,6 +3,7 @@ package ch.uzh.ifi.hase.soprafs26.controller;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.web.bind.annotation.RequestHeader;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.GameHistoryEntryDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.UserGetDTO;
@@ -92,11 +93,17 @@ public List<UserGetDTO> getAllUsers() {
         return DTOMapper.INSTANCE.convertEntityToUserGetDTO(loggedUser);
     }
 
-	// Helper for protected endpoints (Task #76 - Session Management):
-	// To secure a endpoint, follow these two steps:
-	// 1. Add '@RequestHeader("Authorization") String token' as a method parameter.
-	// 2. Call 'authenticationService.authenticateByToken(token);' as the first line of the method.
-	// If the token is invalid or missing, an UNAUTHORIZED (401) exception will be thrown automatically.
+	@PostMapping("/logout")
+	@ResponseStatus(HttpStatus.OK)
+	@ResponseBody
+	@Operation(summary = "Logout a user", description = "Logs out the authenticated user and invalidates the session token")
+	@ApiResponses(value = {
+		@ApiResponse(responseCode = "200", description = "Logout successful"),
+		@ApiResponse(responseCode = "401", description = "Missing or invalid token")
+	})
+	public void logoutUser(@RequestHeader("Authorization") String token) {
+		userService.logoutUser(token);
+	}
 
 	@GetMapping("/users/me/games")
 	@ResponseStatus(HttpStatus.OK)

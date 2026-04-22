@@ -123,4 +123,14 @@ public class UserService {
 		if (player == null || player.getWizardClass() == null) return null;
 		return player.getWizardClass().name();
 	}
+
+	public void logoutUser(String token) {
+		User user = userRepository.findByToken(token);
+		if (user == null) {
+			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token");
+		}
+		user.setStatus(UserStatus.OFFLINE);
+		user.setToken(null);
+		userRepository.saveAndFlush(user);
+	}
 }
