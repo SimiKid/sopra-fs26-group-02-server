@@ -68,12 +68,9 @@ public class WeatherService {
                 .queryParam("units", "metric")
                 .toUriString();
 
-        // log.info("Fetching weather data from API for location {}: {}", location, url);
-
         // saving response as string instead of JsonNode because Spring Boot 4 overrides jackson-databind to version 3, which causes issues with JsonNode.
         String response = restTemplate.getForObject(url, String.class);
-        // log.info("RAW API RESPONSE: {}", response);
-        
+
         WeatherData weatherData = new WeatherData();
         double temp = 0;
         double rain = 0;
