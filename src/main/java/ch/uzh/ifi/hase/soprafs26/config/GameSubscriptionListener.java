@@ -10,6 +10,11 @@ import org.springframework.web.server.ResponseStatusException;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.BattleStateDTO;
 import ch.uzh.ifi.hase.soprafs26.service.BattleService;
 
+/**
+ * When a client subscribes to /topic/game/{code}, immediately sends them
+ * the current battle state. Without this, a late-joining or reconnecting
+ * client would have to wait until the next attack to receive any data.
+ */
 @Component
 public class GameSubscriptionListener {
 

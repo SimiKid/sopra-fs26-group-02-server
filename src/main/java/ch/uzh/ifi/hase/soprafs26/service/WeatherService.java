@@ -16,6 +16,11 @@ import ch.uzh.ifi.hase.soprafs26.entity.GameSession;
 
 import java.util.Random;
 
+/**
+ * Fetches live weather for the arena location from OpenWeather.
+ * If the API call fails, the arena is switched to the FALLBACK location
+ * and random weather is returned so the game can still start.
+ */
 @Service
 public class WeatherService {
 

@@ -18,6 +18,12 @@ import ch.uzh.ifi.hase.soprafs26.rest.dto.BattleStateDTO;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Handles per-player attack selection during the CONFIGURING phase.
+ * Once both players have selected their 3 attacks and flipped their ready
+ * flag, the session transitions to BATTLE and the initial state is
+ * broadcast to the game's WebSocket topic.
+ */
 @Service
 @Transactional
 public class AttackService {
@@ -114,6 +120,8 @@ public class AttackService {
         if (player2 == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Player2 not found");
         }
+        // both players have locked in their attacks -> kick off the battle.
+        // active player is chosen randomly to remove first-mover bias.
         if (player1.isReady() && player2.isReady()) {
             session.setGameStatus(GameStatus.BATTLE);
             session.setActivePlayerId(

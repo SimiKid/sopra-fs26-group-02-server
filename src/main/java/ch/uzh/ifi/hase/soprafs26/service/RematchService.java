@@ -11,6 +11,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+/**
+ * Coordinates rematch requests. A rematch is only created once BOTH
+ * players have opted in; the first requester's vote is stored on the
+ * old session and a new game is generated when the second vote arrives.
+ */
 @Service
 @Transactional
 public class RematchService {
@@ -43,6 +48,7 @@ public class RematchService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Game is not finished yet.");
         }
 
+        // rematch already created by the other player's request -> nothing to do
         if (oldSession.getRematchGameCode() != null) {
             return;
         }
@@ -60,8 +66,10 @@ public class RematchService {
         }
         gameSessionRepository.save(oldSession);
 
+        // re-read to pick up the other player's vote if they saved concurrently
         GameSession freshSession = gameSessionRepository.findByGameCode(gameCode);
 
+        // both players have opted in -> spin up the rematch game
         if (freshSession.getPlayer1WantsRematch() && freshSession.getPlayer2WantsRematch()) {
             String newCode = createRematchGame(freshSession);
             freshSession.setRematchGameCode(newCode);

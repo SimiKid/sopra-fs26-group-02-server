@@ -7,6 +7,11 @@ import ch.uzh.ifi.hase.soprafs26.rest.dto.BattleResultGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.BattleStateDTO;
 import ch.uzh.ifi.hase.soprafs26.service.BattleService;
 
+/**
+ * REST read-only endpoints for battle state and final result.
+ * Real-time updates during a battle go over WebSocket
+ * (see BattleWebSocketController + /topic/game/{code}).
+ */
 @RestController
 public class BattleController {
 
