@@ -8,11 +8,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import ch.uzh.ifi.hase.soprafs26.constant.GameResult;
 import ch.uzh.ifi.hase.soprafs26.constant.UserStatus;
+import ch.uzh.ifi.hase.soprafs26.entity.GameSession;
+import ch.uzh.ifi.hase.soprafs26.entity.Player;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
+import ch.uzh.ifi.hase.soprafs26.repository.GameSessionRepository;
+import ch.uzh.ifi.hase.soprafs26.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.UserRepository;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.GameHistoryEntryDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -28,10 +37,16 @@ public class UserService {
 
 	private final Logger log = LoggerFactory.getLogger(UserService.class);
 
-	private final UserRepository userRepository;	
+	private final UserRepository userRepository;
+	private final GameSessionRepository gameSessionRepository;
+	private final PlayerRepository playerRepository;
 
-	public UserService(@Qualifier("userRepository") UserRepository userRepository) {
+	public UserService(@Qualifier("userRepository") UserRepository userRepository,
+	                   @Qualifier("gameSessionRepository") GameSessionRepository gameSessionRepository,
+	                   @Qualifier("playerRepository") PlayerRepository playerRepository) {
 		this.userRepository = userRepository;
+		this.gameSessionRepository = gameSessionRepository;
+		this.playerRepository = playerRepository;
 	}
 /* template code, connected to the template code in the UserController
 
@@ -76,5 +91,36 @@ public class UserService {
 		if (userByUsername != null) {
 			throw new ResponseStatusException(HttpStatus.CONFLICT, String.format(baseErrorMessage, "username", "is"));
 		}
+	}
+
+	public List<GameHistoryEntryDTO> getGameHistory(Long userId) {
+		List<GameSession> sessions = gameSessionRepository.findFinishedGamesForUser(userId);
+		List<GameHistoryEntryDTO> entries = new ArrayList<>();
+		for (GameSession session : sessions) {
+			entries.add(buildHistoryEntry(session, userId));
+		}
+		return entries;
+	}
+
+	private GameHistoryEntryDTO buildHistoryEntry(GameSession session, Long userId) {
+		GameHistoryEntryDTO dto = DTOMapper.INSTANCE.convertEntityToGameHistoryEntryDTO(session);
+		dto.setResult(deriveResult(session, userId));
+
+		Long opponentId = userId.equals(session.getPlayer1Id()) ? session.getPlayer2Id() : session.getPlayer1Id();
+		dto.setMyWizardClass(lookupWizardClass(userId, session.getId()));
+		dto.setOpponentWizardClass(opponentId == null ? null : lookupWizardClass(opponentId, session.getId()));
+		return dto;
+	}
+
+	private GameResult deriveResult(GameSession session, Long userId) {
+		Long winnerId = session.getWinnerId();
+		if (winnerId == null) return GameResult.DRAW;
+		return winnerId.equals(userId) ? GameResult.WIN : GameResult.LOSS;
+	}
+
+	private String lookupWizardClass(Long userId, Long gameSessionId) {
+		Player player = playerRepository.findByUserIdAndGameSessionId(userId, gameSessionId);
+		if (player == null || player.getWizardClass() == null) return null;
+		return player.getWizardClass().name();
 	}
 }

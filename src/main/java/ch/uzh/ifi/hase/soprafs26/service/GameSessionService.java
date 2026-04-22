@@ -62,7 +62,7 @@ public class GameSessionService {
 	private static final int MAX_ATTEMPTS = 5;
 
 	private static final Random RANDOM = new Random();
-	private static final int SIZE = Location.values().length;
+	private static final int LOCSIZE = Location.values().length - 1; // exclude fallback location
 
 	public List<GameSession> getGameSessions() {
     return this.gameSessionRepository.findAll();
@@ -76,9 +76,9 @@ public class GameSessionService {
 
 
 		// random location from enum
-		newGameSession.setArenaLocation(Location.values()[RANDOM.nextInt(SIZE)]);
+		newGameSession.setArenaLocation(Location.values()[RANDOM.nextInt(LOCSIZE)]);
 		// get & set weather for location
-		WeatherGetDTO weather = weatherService.getWeatherForLocation(newGameSession.getArenaLocation());
+		WeatherGetDTO weather = weatherService.getWeatherForLocation(newGameSession, newGameSession.getArenaLocation());
 		newGameSession.setRain((RainCategory) weather.getRainCategory());
 		newGameSession.setTemperature((TemperatureCategory) weather.getTemperatureCategory());
 
@@ -96,6 +96,7 @@ public class GameSessionService {
 				// create Player 1
 				Player player1 = new Player();
 				player1.setUserId(saved.getPlayer1Id());
+				player1.setGameSessionId(saved.getId());
 				player1.setReady(false);
 				playerRepository.save(player1);
 
@@ -120,11 +121,8 @@ public class GameSessionService {
 	}
 
 	public GameSession getByGameCode(String gameCode) {
-		GameSession gameSession = gameSessionRepository.findByGameCode(gameCode);
-		if (gameSession == null) {
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found or expired.");
-		}
-		return gameSession;
+		return Optional.ofNullable(gameSessionRepository.findByGameCode(gameCode))
+			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found or expired."));
 	}
 
     // This method creates a random 6-character game code consisting of uppercase letters and digits.
@@ -133,15 +131,8 @@ public class GameSessionService {
 		}
 
 	public GameSession joinGameSession(String gameCode, Long player2Id) {
-		if (gameCode == null || gameCode.length() != 6) {
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid game code format.");
-		}
-
-		GameSession gameSession = gameSessionRepository.findByGameCode(gameCode);
-
-		if (gameSession == null) {
-			throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found or expired.");
-		}
+		GameSession gameSession = Optional.ofNullable(gameSessionRepository.findByGameCode(gameCode))
+			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found or expired."));
 
 		if (gameSession.getGameStatus() != GameStatus.WAITING) {
 			throw new ResponseStatusException(HttpStatus.CONFLICT, "Game is not accepting players.");
@@ -164,6 +155,7 @@ public class GameSessionService {
 		// create Player 2
 		Player player2 = new Player();
 		player2.setUserId(player2Id);
+		player2.setGameSessionId(gameSession.getId());
 		player2.setReady(false);
 		playerRepository.save(player2);
 
@@ -221,7 +213,7 @@ public class GameSessionService {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not part of this game session.");
 		}
 		
-		Player player = playerRepository.findByUserId(userId);
+		Player player = playerRepository.findByUserIdAndGameSessionId(userId, gameSession.getId());
 		WizardClass wc;
 		try {
 			wc = WizardClass.valueOf(wizardClassName);
@@ -255,5 +247,17 @@ public class GameSessionService {
 		LocationGetDTO locationDTO = new LocationGetDTO();
 		locationDTO.setLocationName(location.getDisplayName());
 		return locationDTO;
+	}
+
+	public void clearPlayerCurrentSessions(Long player1Id, Long player2Id) {
+		User p1 = userRepository.findById(player1Id)
+			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+		p1.setCurrentGameSessionId(null);
+		userRepository.save(p1);
+
+		User p2 = userRepository.findById(player2Id)
+			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+		p2.setCurrentGameSessionId(null);
+		userRepository.save(p2);
 	}
 }

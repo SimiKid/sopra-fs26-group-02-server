@@ -19,7 +19,7 @@ public class BattleWebSocketController {
 
     @MessageMapping("/game/{gameCode}/attack")
     public void handleAttack(
-            @DestinationVariable String gameCode,
+            @DestinationVariable ("gameCode") String gameCode,
             @Header("Authorization") String token,
             @Payload String attackName) {
         

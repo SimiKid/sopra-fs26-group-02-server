@@ -70,7 +70,7 @@ public class GameSessionController {
         return DTOMapper.INSTANCE.convertEntityToGameSessionGetDTO(gameSession);
     }
 
-    @PutMapping("/games/{gameCode}/join")
+    @PostMapping("/games/{gameCode}/join")
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
     @Operation(summary = "Join an existing game session", description = "Adds the authenticated user as player 2 to the game session")
