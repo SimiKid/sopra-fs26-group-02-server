@@ -158,6 +158,32 @@ public class UserServiceTest {
 		assertEquals(LocalDateTime.of(2026, 4, 5, 12, 0), entry.getGameDate());
 	}
 
+	@Test
+	public void logoutUser_validToken_clearsTokenAndSetsOffline() {
+		User user = new User();
+		user.setId(42L);
+		user.setToken("valid-token");
+		user.setStatus(UserStatus.ONLINE);
+
+		Mockito.when(userRepository.findByToken("valid-token")).thenReturn(user);
+
+		userService.logoutUser("valid-token");
+
+		assertNull(user.getToken());
+		assertEquals(UserStatus.OFFLINE, user.getStatus());
+		Mockito.verify(userRepository).saveAndFlush(user);
+	}
+
+	@Test
+	public void logoutUser_invalidToken_throwsUnauthorized() {
+		Mockito.when(userRepository.findByToken("bad-token")).thenReturn(null);
+
+		ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+			() -> userService.logoutUser("bad-token"));
+
+		assertEquals(401, ex.getStatusCode().value());
+	}
+
 	private GameSession historySession(Long id, Long player1Id, Long player2Id, Long winnerId, LocalDateTime createdAt) {
 		GameSession s = new GameSession();
 		s.setId(id);

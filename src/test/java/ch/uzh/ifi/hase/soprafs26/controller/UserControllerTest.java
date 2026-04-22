@@ -219,4 +219,21 @@ public class UserControllerTest {
 				.andExpect(status().isUnauthorized());
 	}
 
+	@Test
+	public void logoutUser_validToken_returnsOkAndInvalidatesToken() throws Exception {
+		mockMvc.perform(post("/logout").header("Authorization", "valid-token"))
+				.andExpect(status().isOk());
+
+		Mockito.verify(userService).logoutUser("valid-token");
+	}
+
+	@Test
+	public void logoutUser_invalidToken_returnsUnauthorized() throws Exception {
+		Mockito.doThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token"))
+				.when(userService).logoutUser("bad-token");
+
+		mockMvc.perform(post("/logout").header("Authorization", "bad-token"))
+				.andExpect(status().isUnauthorized());
+	}
+
 }
