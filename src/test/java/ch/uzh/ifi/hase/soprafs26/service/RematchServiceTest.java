@@ -4,6 +4,8 @@ import ch.uzh.ifi.hase.soprafs26.constant.GameStatus;
 import ch.uzh.ifi.hase.soprafs26.entity.GameSession;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.repository.GameSessionRepository;
+import ch.uzh.ifi.hase.soprafs26.repository.UserRepository;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -25,6 +27,8 @@ class RematchServiceTest {
     private AuthenticationService authenticationService;
     @Mock
     private GameSessionService gameSessionService;
+    @Mock
+    private UserRepository userRepository; 
 
     @InjectMocks
     private RematchService rematchService;
@@ -78,11 +82,15 @@ class RematchServiceTest {
         GameSession newSession = new GameSession();
         newSession.setGameCode("XYZ789");
 
-        given(authenticationService.authenticateByToken("token-p2")).willReturn(player2);
-        given(gameSessionRepository.findByGameCode("ABC123")).willReturn(session);
-        given(gameSessionRepository.save(any(GameSession.class))).willAnswer(i -> i.getArgument(0));
-        given(gameSessionService.createGameSession(any())).willReturn(newSession);
+        player1.setCurrentGameSessionId(session.getId());
+        player2.setCurrentGameSessionId(session.getId());
 
+        given(authenticationService.authenticateByToken("token-p2")).willReturn(player2);
+        given(gameSessionRepository.findByGameCode("ABC123")).willReturn(session); // both calls return same session
+        given(gameSessionRepository.save(any(GameSession.class))).willAnswer(i -> i.getArgument(0));
+        given(userRepository.findById(1L)).willReturn(java.util.Optional.of(player1));
+        given(userRepository.findById(2L)).willReturn(java.util.Optional.of(player2));
+        given(gameSessionService.createGameSession(any())).willReturn(newSession);
         // when
         rematchService.requestRematch("ABC123", "token-p2");
 
