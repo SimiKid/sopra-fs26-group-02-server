@@ -27,6 +27,8 @@ public class GameSessionGetDTO {
 
     private Long id;
 
+    private String rematchGameCode;
+
     public String getGameCode() {
         return gameCode;
     }
@@ -82,5 +84,13 @@ public class GameSessionGetDTO {
     public void setId(Long id) {
         this.id = id; 
 
+    }
+
+    public String getRematchGameCode(){
+        return rematchGameCode;
+    }
+
+    public void setRematchGameCode(String rematchGameCode){
+        this.rematchGameCode = rematchGameCode;
     }
 }

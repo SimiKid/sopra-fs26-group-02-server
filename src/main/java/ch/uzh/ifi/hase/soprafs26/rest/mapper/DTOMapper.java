@@ -50,6 +50,7 @@ public interface DTOMapper {
 	@Mapping(source = "player2Id", target = "player2Id")
 	@Mapping(source = "activePlayerId", target = "activePlayerId")
 	@Mapping(source = "createdAt", target = "createdAt")
+	@Mapping(source = "rematchGameCode", target = "rematchGameCode") 
 	GameSessionGetDTO convertEntityToGameSessionGetDTO(GameSession gameSession);
 
 	@BeanMapping(unmappedTargetPolicy = ReportingPolicy.IGNORE) // ignore unmapped target properties until they are implemented
@@ -67,4 +68,5 @@ public interface DTOMapper {
 	@Mapping(source = "rain", target = "rain")
 	@BeanMapping(unmappedTargetPolicy = ReportingPolicy.IGNORE) // result + wizard classes are filled in by the service
 	GameHistoryEntryDTO convertEntityToGameHistoryEntryDTO(GameSession gameSession);
+
 }

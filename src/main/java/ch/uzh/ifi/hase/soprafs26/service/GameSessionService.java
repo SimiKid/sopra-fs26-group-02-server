@@ -248,4 +248,16 @@ public class GameSessionService {
 		locationDTO.setLocationName(location.getDisplayName());
 		return locationDTO;
 	}
+
+	public void clearPlayerCurrentSessions(Long player1Id, Long player2Id) {
+		User p1 = userRepository.findById(player1Id)
+			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+		p1.setCurrentGameSessionId(null);
+		userRepository.save(p1);
+
+		User p2 = userRepository.findById(player2Id)
+			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+		p2.setCurrentGameSessionId(null);
+		userRepository.save(p2);
+	}
 }
