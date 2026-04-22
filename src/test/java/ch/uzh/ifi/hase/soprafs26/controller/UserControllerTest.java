@@ -2,7 +2,7 @@ package ch.uzh.ifi.hase.soprafs26.controller;
 
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
-import ch.uzh.ifi.hase.soprafs26.Interceptor.AuthInterceptor;
+import ch.uzh.ifi.hase.soprafs26.interceptor.AuthInterceptor;
 import ch.uzh.ifi.hase.soprafs26.constant.GameResult;
 import ch.uzh.ifi.hase.soprafs26.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs26.entity.User;

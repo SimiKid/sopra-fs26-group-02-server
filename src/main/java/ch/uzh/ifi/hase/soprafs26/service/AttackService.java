@@ -13,12 +13,7 @@ import ch.uzh.ifi.hase.soprafs26.entity.Player;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.repository.GameSessionRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.PlayerRepository;
-import ch.uzh.ifi.hase.soprafs26.repository.UserRepository;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.BattleStateDTO;
-import ch.uzh.ifi.hase.soprafs26.service.BattleService;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Optional;
@@ -26,19 +21,15 @@ import java.util.Optional;
 @Service
 @Transactional
 public class AttackService {
-    private final Logger log = LoggerFactory.getLogger(AttackService.class);
-
     private final PlayerRepository playerRepository;
     private final GameSessionRepository gameSessionRepository;
-    private final UserRepository userRepository;
     private final AuthenticationService authenticationService;
     private final SimpMessagingTemplate messagingTemplate;
     private final BattleService battleService;
 
-    public AttackService(PlayerRepository playerRepository, GameSessionRepository gameSessionRepository, UserRepository userRepository, AuthenticationService authenticationService, SimpMessagingTemplate messagingTemplate, BattleService battleService) {
+    public AttackService(PlayerRepository playerRepository, GameSessionRepository gameSessionRepository, AuthenticationService authenticationService, SimpMessagingTemplate messagingTemplate, BattleService battleService) {
         this.playerRepository = playerRepository;
-        this.gameSessionRepository=gameSessionRepository;
-        this.userRepository=userRepository;
+        this.gameSessionRepository = gameSessionRepository;
         this.authenticationService = authenticationService;
         this.messagingTemplate = messagingTemplate;
         this.battleService = battleService;
@@ -128,35 +119,11 @@ public class AttackService {
             session.setActivePlayerId(
                 Math.random() < 0.5 ? session.getPlayer1Id() : session.getPlayer2Id()
             );
-        
+
             battleService.startTimer(session.getGameCode(), session);
             gameSessionRepository.save(session);
 
-            User user1 = userRepository.findById(session.getPlayer1Id())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User1 not found"));
-            User user2 = userRepository.findById(session.getPlayer2Id())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User2 not found"));
-
-            BattleStateDTO initialState = new BattleStateDTO();
-            initialState.setActivePlayerId(session.getActivePlayerId());
-            initialState.setPlayer1Hp(player1.getHp());
-            initialState.setPlayer2Hp(player2.getHp());
-            initialState.setDamageDealt(0);
-            initialState.setAttackUsed(null);
-            initialState.setGameStatus(session.getGameStatus());
-            initialState.setWinnerId(session.getWinnerId());
-
-            initialState.setPlayer1UserId(session.getPlayer1Id());
-            initialState.setPlayer2UserId(session.getPlayer2Id());
-            initialState.setPlayer1Username(user1.getUsername());
-            initialState.setPlayer2Username(user2.getUsername());
-            initialState.setPlayer1WizardClass(player1.getWizardClass() != null ? player1.getWizardClass().name() : "Unknown");
-            initialState.setPlayer2WizardClass(player2.getWizardClass() != null ? player2.getWizardClass().name() : "Unknown");
-
-            initialState.setLocation(session.getArenaLocation() != null ? session.getArenaLocation().name() : "Unknown");
-            initialState.setRain(session.getRain());
-            initialState.setTemperature(session.getTemperature());
-
+            BattleStateDTO initialState = battleService.buildBattleState(session, 0, null);
             messagingTemplate.convertAndSend("/topic/game/" + gameCode, initialState);
         }
         return savedPlayer;

@@ -1,4 +1,4 @@
-package ch.uzh.ifi.hase.soprafs26.Interceptor;
+package ch.uzh.ifi.hase.soprafs26.interceptor;
 
 import ch.uzh.ifi.hase.soprafs26.service.AuthenticationService;
 import jakarta.servlet.http.HttpServletRequest;

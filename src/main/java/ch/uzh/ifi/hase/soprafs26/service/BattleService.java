@@ -188,7 +188,7 @@ public class BattleService {
     }
 
 
-    private BattleStateDTO buildBattleState(GameSession session, int damage, String attackName) {
+    public BattleStateDTO buildBattleState(GameSession session, int damage, String attackName) {
         Player player1 = playerRepository.findByUserIdAndGameSessionId(session.getPlayer1Id(), session.getId());
         Player player2 = playerRepository.findByUserIdAndGameSessionId(session.getPlayer2Id(), session.getId());
 

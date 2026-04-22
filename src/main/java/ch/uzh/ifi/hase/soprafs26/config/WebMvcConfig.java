@@ -1,6 +1,6 @@
 package ch.uzh.ifi.hase.soprafs26.config;
 
-import ch.uzh.ifi.hase.soprafs26.Interceptor.AuthInterceptor;
+import ch.uzh.ifi.hase.soprafs26.interceptor.AuthInterceptor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;

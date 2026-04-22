@@ -1,6 +1,6 @@
 package ch.uzh.ifi.hase.soprafs26.controller;
 
-import ch.uzh.ifi.hase.soprafs26.Interceptor.AuthInterceptor;
+import ch.uzh.ifi.hase.soprafs26.interceptor.AuthInterceptor;
 import ch.uzh.ifi.hase.soprafs26.service.GameSessionService;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.LocationGetDTO;
 import org.junit.jupiter.api.BeforeEach;
