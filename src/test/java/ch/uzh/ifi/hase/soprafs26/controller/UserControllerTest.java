@@ -2,7 +2,7 @@ package ch.uzh.ifi.hase.soprafs26.controller;
 
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
-import ch.uzh.ifi.hase.soprafs26.Interceptor.AuthInterceptor;
+import ch.uzh.ifi.hase.soprafs26.interceptor.AuthInterceptor;
 import ch.uzh.ifi.hase.soprafs26.constant.GameResult;
 import ch.uzh.ifi.hase.soprafs26.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
@@ -216,6 +216,23 @@ public class UserControllerTest {
 				.willThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token"));
 
 		mockMvc.perform(get("/users/me/games").header("Authorization", "bad-token"))
+				.andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	public void logoutUser_validToken_returnsOkAndInvalidatesToken() throws Exception {
+		mockMvc.perform(post("/logout").header("Authorization", "valid-token"))
+				.andExpect(status().isOk());
+
+		Mockito.verify(userService).logoutUser("valid-token");
+	}
+
+	@Test
+	public void logoutUser_invalidToken_returnsUnauthorized() throws Exception {
+		Mockito.doThrow(new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token"))
+				.when(userService).logoutUser("bad-token");
+
+		mockMvc.perform(post("/logout").header("Authorization", "bad-token"))
 				.andExpect(status().isUnauthorized());
 	}
 

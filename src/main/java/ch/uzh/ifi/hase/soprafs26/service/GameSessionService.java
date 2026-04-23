@@ -64,11 +64,9 @@ public class GameSessionService {
 	private static final Random RANDOM = new Random();
 	private static final int LOCSIZE = Location.values().length - 1; // exclude fallback location
 
-	public List<GameSession> getGameSessions() {
-    return this.gameSessionRepository.findAll();
-}
-
-	// The for-loop tries to create a unique game code. If it fails after MAX_ATTEMPTS, it will throw an exception.
+	// Creates the session with a random 6-char game code. Retries up to
+	// MAX_ATTEMPTS on DataIntegrityViolationException (collision on the
+	// unique gameCode column) and gives up with 503 if still unlucky.
 	public GameSession createGameSession(GameSession newGameSession) {
 		newGameSession.setGameStatus(GameStatus.WAITING);
 		newGameSession.setCreatedAt(LocalDateTime.now());

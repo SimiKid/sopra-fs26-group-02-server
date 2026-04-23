@@ -16,6 +16,11 @@ import ch.uzh.ifi.hase.soprafs26.entity.GameSession;
 
 import java.util.Random;
 
+/**
+ * Fetches live weather for the arena location from OpenWeather.
+ * If the API call fails, the arena is switched to the FALLBACK location
+ * and random weather is returned so the game can still start.
+ */
 @Service
 public class WeatherService {
 
@@ -68,12 +73,9 @@ public class WeatherService {
                 .queryParam("units", "metric")
                 .toUriString();
 
-        // log.info("Fetching weather data from API for location {}: {}", location, url);
-
         // saving response as string instead of JsonNode because Spring Boot 4 overrides jackson-databind to version 3, which causes issues with JsonNode.
         String response = restTemplate.getForObject(url, String.class);
-        // log.info("RAW API RESPONSE: {}", response);
-        
+
         WeatherData weatherData = new WeatherData();
         double temp = 0;
         double rain = 0;

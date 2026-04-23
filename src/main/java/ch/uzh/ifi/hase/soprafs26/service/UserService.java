@@ -48,13 +48,6 @@ public class UserService {
 		this.gameSessionRepository = gameSessionRepository;
 		this.playerRepository = playerRepository;
 	}
-/* template code, connected to the template code in the UserController
-
-	public List<User> getUsers() {
-		return this.userRepository.findAll();
-	}
-
-*/
 
 	public User createUser(User newUser) {
 		newUser.setToken(UUID.randomUUID().toString());

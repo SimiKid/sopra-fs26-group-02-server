@@ -41,8 +41,6 @@ public class GameSession implements Serializable {
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
-    private LocalDateTime turnStartedAt;
-
     private Long winnerId;
 
     private boolean player1WantsRematch = false;
@@ -113,13 +111,7 @@ public class GameSession implements Serializable {
         public void setCreatedAt(LocalDateTime createdAt) 
             { this.createdAt = createdAt; }
 
-        public LocalDateTime getTurnStartedAt() 
-            { return turnStartedAt; }
-
-        public void setTurnStartedAt(LocalDateTime turnStartedAt) 
-            { this.turnStartedAt = turnStartedAt; }
-
-        public Long getWinnerId() 
+        public Long getWinnerId()
             { return winnerId; }
         
         public void setWinnerId(Long winnerId) 

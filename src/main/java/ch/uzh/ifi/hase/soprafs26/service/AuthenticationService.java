@@ -12,6 +12,11 @@ import ch.uzh.ifi.hase.soprafs26.constant.UserStatus;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.repository.UserRepository;
 
+/**
+ * Handles login (username/password) and token-based authentication.
+ * On successful login a fresh UUID token is issued; subsequent requests
+ * pass that token in the Authorization header and are validated here.
+ */
 @Service
 @Transactional
 public class AuthenticationService {

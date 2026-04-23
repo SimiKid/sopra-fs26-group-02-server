@@ -12,7 +12,6 @@ import ch.uzh.ifi.hase.soprafs26.rest.dto.UserPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.AttackGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.GameHistoryEntryDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.GameSessionGetDTO;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.GameSessionPostDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.PlayerGetDTO;
 
 /**
@@ -39,9 +38,6 @@ public interface DTOMapper {
 	@Mapping(source = "status", target = "status")
 	@Mapping(source = "token", target = "token")
 	UserGetDTO convertEntityToUserGetDTO(User user);
-
-	@BeanMapping(unmappedTargetPolicy = ReportingPolicy.IGNORE) // ignore unmapped target properties until they are implemented
-	GameSession convertGameSessionPostDTOtoEntity(GameSessionPostDTO gameSessionPostDTO);
 
 	@Mapping(source = "id", target = "id")
 	@Mapping(source = "gameCode", target = "gameCode")

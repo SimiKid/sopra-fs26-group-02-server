@@ -8,6 +8,11 @@ import org.springframework.stereotype.Controller;
 
 import ch.uzh.ifi.hase.soprafs26.service.BattleService;
 
+/**
+ * STOMP message handler for in-battle actions. Clients send an attack to
+ * /app/game/{gameCode}/attack; BattleService resolves it and broadcasts
+ * the resulting state to /topic/game/{gameCode}.
+ */
 @Controller
 public class BattleWebSocketController {
 
