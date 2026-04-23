@@ -193,8 +193,15 @@ public class GameSessionService {
 		List<GameSession> expiredSessions = gameSessionRepository.findByPlayer2IdIsNullAndCreatedAtBefore(cutoff);
 		for (GameSession session : expiredSessions) {
 			log.info("Cleaning up expired game session with code {}", session.getGameCode());
+			
+				userRepository.findById(session.getPlayer1Id()).ifPresent(user -> {
+				user.setCurrentGameSessionId(null);
+				userRepository.save(user);
+			});
+			
 			gameSessionRepository.delete(session);
 		}
+		
 	}
 
 	public Player saveWizardClass(String gameCode, String token, String wizardClassName) {
