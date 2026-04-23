@@ -16,6 +16,7 @@ import ch.uzh.ifi.hase.soprafs26.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.UserRepository;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.BattleStateDTO;
 import ch.uzh.ifi.hase.soprafs26.service.BattleService;
+import java.time.LocalDateTime;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -129,7 +130,7 @@ public class AttackService {
                 Math.random() < 0.5 ? session.getPlayer1Id() : session.getPlayer2Id()
             );
         
-            battleService.startTimer(session.getGameCode(), session);
+            
             gameSessionRepository.save(session);
 
             User user1 = userRepository.findById(session.getPlayer1Id())
@@ -145,6 +146,7 @@ public class AttackService {
             initialState.setAttackUsed(null);
             initialState.setGameStatus(session.getGameStatus());
             initialState.setWinnerId(session.getWinnerId());
+            initialState.setTimeStamp(LocalDateTime.now());
 
             initialState.setPlayer1UserId(session.getPlayer1Id());
             initialState.setPlayer2UserId(session.getPlayer2Id());
@@ -156,7 +158,7 @@ public class AttackService {
             initialState.setLocation(session.getArenaLocation() != null ? session.getArenaLocation().name() : "Unknown");
             initialState.setRain(session.getRain());
             initialState.setTemperature(session.getTemperature());
-
+            battleService.startTimer(gameCode, session, initialState);
             messagingTemplate.convertAndSend("/topic/game/" + gameCode, initialState);
         }
         return savedPlayer;
