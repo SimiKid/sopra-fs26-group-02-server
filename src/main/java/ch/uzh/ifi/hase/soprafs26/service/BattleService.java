@@ -26,6 +26,7 @@ import ch.uzh.ifi.hase.soprafs26.constant.TemperatureCategory;
 import ch.uzh.ifi.hase.soprafs26.constant.RainCategory;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Map;
 import java.util.List;
 import java.util.ArrayList;
@@ -139,12 +140,12 @@ public class BattleService {
             userRepository.save(defenderUser);
         } else {
             session.setActivePlayerId(defenderId);
-            startTimer(gameCode, session);
+            
         }
 
         gameSessionRepository.save(session);
-
         BattleStateDTO state = buildBattleState(session, damage, attackName);
+        startTimer(gameCode, session, state);
         broadcastAfterCommit(gameCode, state);
     }
 
@@ -223,6 +224,7 @@ public class BattleService {
         dto.setAttackUsed(attackName);
         dto.setGameStatus(session.getGameStatus());
         dto.setWinnerId(session.getWinnerId());
+        dto.setTimeStamp(LocalDateTime.now());
 
         dto.setPlayer1UserId(session.getPlayer1Id());
         dto.setPlayer2UserId(session.getPlayer2Id());
@@ -234,7 +236,6 @@ public class BattleService {
         dto.setLocation(session.getArenaLocation() != null ? session.getArenaLocation().name() : "Unknown");
         dto.setRain(session.getRain());
         dto.setTemperature(session.getTemperature());
-        
         return dto;
     }
 
@@ -289,7 +290,10 @@ public class BattleService {
             session.getActivePlayerId(),
             session.getId()
         );
-
+        
+        LocalDateTime startTime = dto.getTimeStamp();
+        Instant executionTime = startTime.plusSeconds(30).atZone(ZoneId.systemDefault()).toInstant();
+        
         ScheduledFuture<?> task = taskScheduler.schedule(() -> {
             List<String> playerAttacks = new ArrayList<>();
             playerAttacks.add(attacker.getAttack1());
