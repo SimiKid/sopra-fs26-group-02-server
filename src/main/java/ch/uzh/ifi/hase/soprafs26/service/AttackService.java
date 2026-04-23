@@ -128,10 +128,10 @@ public class AttackService {
                 Math.random() < 0.5 ? session.getPlayer1Id() : session.getPlayer2Id()
             );
 
-            battleService.startTimer(session.getGameCode(), session);
             gameSessionRepository.save(session);
 
             BattleStateDTO initialState = battleService.buildBattleState(session, 0, null);
+            battleService.startTimer(gameCode, session, initialState);
             messagingTemplate.convertAndSend("/topic/game/" + gameCode, initialState);
         }
         return savedPlayer;

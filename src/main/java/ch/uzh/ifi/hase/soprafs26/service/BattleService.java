@@ -284,7 +284,7 @@ public class BattleService {
     // three selected attacks fires automatically on their behalf so the
     // battle can't stall indefinitely. Any new startTimer call cancels the
     // previous one for the same gameCode.
-    public void startTimer(String gameCode, GameSession session) {
+    public void startTimer(String gameCode, GameSession session, BattleStateDTO dto) {
         stopTimer(gameCode);
         Player attacker = playerRepository.findByUserIdAndGameSessionId(
             session.getActivePlayerId(),
@@ -308,7 +308,7 @@ public class BattleService {
             String token = activeUser.getToken();
 
             resolveAttack(gameCode, token, attackName);
-        }, Instant.now().plusSeconds(30));
+        }, executionTime);
 
         activeTimers.put(gameCode, task);
     }
