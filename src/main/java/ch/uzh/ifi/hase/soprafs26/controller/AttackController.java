@@ -13,6 +13,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 
+/**
+ * REST endpoints for the attack-selection phase: listing all available
+ * attacks and saving a player's 3 chosen attacks for a given game.
+ */
 @RestController
 public class AttackController {
     private final AttackService attackService;

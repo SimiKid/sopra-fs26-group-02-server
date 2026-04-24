@@ -26,6 +26,7 @@ import ch.uzh.ifi.hase.soprafs26.constant.TemperatureCategory;
 import ch.uzh.ifi.hase.soprafs26.constant.RainCategory;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Map;
 import java.util.List;
 import java.util.ArrayList;
@@ -40,6 +41,13 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+/**
+ * Core battle orchestrator. Resolves incoming attacks, computes damage
+ * (attack base × wizard class multiplier × weather modifier), logs each
+ * turn, determines the winner, and broadcasts the updated BattleStateDTO
+ * to all subscribers of /topic/game/{gameCode}. Also owns a per-game
+ * auto-attack timer that fires if the active player doesn't act in time.
+ */
 @Service
 @Transactional
 public class BattleService {
@@ -108,6 +116,8 @@ public class BattleService {
         defender.setHp(defender.getHp() - damage);
         playerRepository.save(defender);
 
+        // a "round" = both players have attacked, so the battle can only end on even turn counts;
+        // this guarantees the second player always gets a response swing before a loss is declared.
         boolean isEvenTurn = battleRepository.countTurnsByGameId(session.getId()) % 2 == 0;
         boolean battleEndedAfterRound = isEvenTurn && (attacker.getHp() <= 0 || defender.getHp() <= 0);
         if (battleEndedAfterRound) {
@@ -130,15 +140,17 @@ public class BattleService {
             userRepository.save(defenderUser);
         } else {
             session.setActivePlayerId(defenderId);
-            startTimer(gameCode, session);
+            
         }
 
         gameSessionRepository.save(session);
-
         BattleStateDTO state = buildBattleState(session, damage, attackName);
+        startTimer(gameCode, session, state);
         broadcastAfterCommit(gameCode, state);
     }
 
+    // Defers the WebSocket send until after the DB transaction commits, so clients
+    // re-reading state on the broadcast never observe a stale/uncommitted view.
     private void broadcastAfterCommit(String gameCode, BattleStateDTO state) {
         String destination = "/topic/game/" + gameCode;
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
@@ -159,6 +171,9 @@ public class BattleService {
         log.info("battle broadcast {} took {}ms", destination, (System.nanoTime() - start) / 1_000_000);
     }
 
+    // Damage = attack.baseDamage × wizard class multiplier × weather modifier.
+    // The weather modifier boosts or dampens an element based on the current
+    // temperature & rain (e.g. fire attacks do more in HOT/CLEAR weather).
     private int calculateDamage(Attack attack, Player attacker, GameSession session) {
         Element element = attack.getElement();
         TemperatureCategory temperature = session.getTemperature();
@@ -188,7 +203,7 @@ public class BattleService {
     }
 
 
-    private BattleStateDTO buildBattleState(GameSession session, int damage, String attackName) {
+    public BattleStateDTO buildBattleState(GameSession session, int damage, String attackName) {
         Player player1 = playerRepository.findByUserIdAndGameSessionId(session.getPlayer1Id(), session.getId());
         Player player2 = playerRepository.findByUserIdAndGameSessionId(session.getPlayer2Id(), session.getId());
 
@@ -209,6 +224,7 @@ public class BattleService {
         dto.setAttackUsed(attackName);
         dto.setGameStatus(session.getGameStatus());
         dto.setWinnerId(session.getWinnerId());
+        dto.setTimeStamp(LocalDateTime.now());
 
         dto.setPlayer1UserId(session.getPlayer1Id());
         dto.setPlayer2UserId(session.getPlayer2Id());
@@ -220,7 +236,6 @@ public class BattleService {
         dto.setLocation(session.getArenaLocation() != null ? session.getArenaLocation().name() : "Unknown");
         dto.setRain(session.getRain());
         dto.setTemperature(session.getTemperature());
-        
         return dto;
     }
 
@@ -265,29 +280,36 @@ public class BattleService {
         }
     }
     
-    public void startTimer(String gameCode, GameSession session) {
+    // If the active player doesn't attack within 30s, a random one of their
+    // three selected attacks fires automatically on their behalf so the
+    // battle can't stall indefinitely. Any new startTimer call cancels the
+    // previous one for the same gameCode.
+    public void startTimer(String gameCode, GameSession session, BattleStateDTO dto) {
         stopTimer(gameCode);
         Player attacker = playerRepository.findByUserIdAndGameSessionId(
             session.getActivePlayerId(),
             session.getId()
         );
-
+        
+        LocalDateTime startTime = dto.getTimeStamp();
+        Instant executionTime = startTime.plusSeconds(30).atZone(ZoneId.systemDefault()).toInstant();
+        
         ScheduledFuture<?> task = taskScheduler.schedule(() -> {
             List<String> playerAttacks = new ArrayList<>();
             playerAttacks.add(attacker.getAttack1());
             playerAttacks.add(attacker.getAttack2());
             playerAttacks.add(attacker.getAttack3());
-        
+
             String attackName = playerAttacks.get((int) (Math.random() * 3));
-        
-            // get the stored token of the active player from the UserRepository for the attack resolution
+
+            // use the active player's own token so resolveAttack's auth check passes
             User activeUser = userRepository.findById(session.getActivePlayerId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Active user not found"));
             String token = activeUser.getToken();
 
             resolveAttack(gameCode, token, attackName);
-        }, Instant.now().plusSeconds(30));
-        
+        }, executionTime);
+
         activeTimers.put(gameCode, task);
     }
 

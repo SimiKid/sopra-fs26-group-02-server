@@ -15,6 +15,7 @@ public class BattleStateDTO {
     private String attackUsed;
     private GameStatus gameStatus;
     private Long winnerId;
+    private LocalDateTime timeStamp;
 
     private Long player1UserId;
     private Long player2UserId;
@@ -146,5 +147,13 @@ public class BattleStateDTO {
 
     public void setTemperature(TemperatureCategory temperature) {
         this.temperature = temperature;
+    }
+
+    public LocalDateTime getTimeStamp() {
+        return timeStamp;
+    }
+
+    public void setTimeStamp(LocalDateTime timeStamp) {
+        this.timeStamp = timeStamp;
     }
 }

@@ -3,6 +3,7 @@ package ch.uzh.ifi.hase.soprafs26.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -14,8 +15,14 @@ import ch.uzh.ifi.hase.soprafs26.rest.dto.WeatherGetDTO;
 import ch.uzh.ifi.hase.soprafs26.entity.WeatherData;
 import ch.uzh.ifi.hase.soprafs26.entity.GameSession;
 
+
 import java.util.Random;
 
+/**
+ * Fetches live weather for the arena location from OpenWeather.
+ * If the API call fails, the arena is switched to the FALLBACK location
+ * and random weather is returned so the game can still start.
+ */
 @Service
 public class WeatherService {
 
@@ -24,10 +31,17 @@ public class WeatherService {
     @Value("${openweather.api.key}")
     private String apiKey;
 
-    private final RestTemplate restTemplate = new RestTemplate();
     private static final Random RANDOM = new Random();
     private static final int RAINSIZE = RainCategory.values().length;
     private static final int TEMPSIZE = TemperatureCategory.values().length;
+    private final RestTemplate restTemplate;
+
+    public WeatherService() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(5000);   // 5s
+        factory.setReadTimeout(10000);     // 10s
+        this.restTemplate = new RestTemplate(factory);
+    }
 
     public WeatherGetDTO getWeatherForLocation(GameSession gameSession, Location location) {
         // fetch weather data from external API
@@ -44,6 +58,7 @@ public class WeatherService {
             return fallbackWeather(gameSession);
         }
     }
+    
 
     private WeatherGetDTO fallbackWeather(GameSession gameSession) {
         gameSession.setArenaLocation(Location.FALLBACK);
@@ -68,12 +83,9 @@ public class WeatherService {
                 .queryParam("units", "metric")
                 .toUriString();
 
-        // log.info("Fetching weather data from API for location {}: {}", location, url);
-
         // saving response as string instead of JsonNode because Spring Boot 4 overrides jackson-databind to version 3, which causes issues with JsonNode.
         String response = restTemplate.getForObject(url, String.class);
-        // log.info("RAW API RESPONSE: {}", response);
-        
+
         WeatherData weatherData = new WeatherData();
         double temp = 0;
         double rain = 0;

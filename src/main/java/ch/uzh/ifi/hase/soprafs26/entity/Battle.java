@@ -30,16 +30,12 @@ public class Battle implements Serializable {
     @Column(nullable = false)
     private Long player2Id;
 
-    private Long activePlayerId; 
-
-    private int turnNumber;
+    private Long activePlayerId;
 
     @Enumerated(EnumType.STRING)
     private Attack  currentAction;
 
     private int damageDealt;
-
-    private double weatherModifier;
 
     private LocalDateTime timeStamp;
 
@@ -84,14 +80,6 @@ public class Battle implements Serializable {
         this.activePlayerId = activePlayerId;
     }
 
-    public int getTurnNumber() {
-        return turnNumber;
-    }
-
-    public void setTurnNumber(int turnNumber) {
-        this.turnNumber = turnNumber;
-    }
-
     public Attack getCurrentAction() {
         return currentAction;
     }
@@ -106,14 +94,6 @@ public class Battle implements Serializable {
 
     public void setDamageDealt(int damageDealt) {
         this.damageDealt = damageDealt;
-    }
-
-    public double getWeatherModifier() {
-        return weatherModifier;
-    }
-
-    public void setWeatherModifier(double weatherModifier) {
-        this.weatherModifier = weatherModifier;
     }
 
     public LocalDateTime getTimeStamp() {
