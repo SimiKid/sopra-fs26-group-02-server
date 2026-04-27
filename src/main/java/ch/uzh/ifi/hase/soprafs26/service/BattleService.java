@@ -3,6 +3,7 @@ package ch.uzh.ifi.hase.soprafs26.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -80,8 +81,12 @@ public class BattleService {
         GameSession session = gameSessionRepository.findByGameCode(gameCode);
         stopTimer(gameCode);
 
-        if (session == null || session.getGameStatus() != GameStatus.BATTLE) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Game not in battle phase.");
+        if (session == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "unknown session");
+        }
+
+        if (session.getGameStatus() != GameStatus.BATTLE){
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Game not in battle phase.");
         }
 
         if (!user.getId().equals(session.getActivePlayerId())) {
@@ -266,7 +271,7 @@ public class BattleService {
         result.setTotalDamageDealt(totalDamage != null ? totalDamage : 0);
 
         int turnsPlayed = battleRepository.countTurnsByGameId(session.getId());
-        result.setTurnsPlayed(turnsPlayed);
+        result.setTurnsPlayed(turnsPlayed/2);
         
         result.setWeather(weatherDTO);
 

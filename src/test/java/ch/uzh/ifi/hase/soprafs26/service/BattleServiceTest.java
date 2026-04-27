@@ -154,6 +154,29 @@ public class BattleServiceTest {
     }
 
     @Test
+    void resolveAttack_unknownGameCode_throws404() {
+        given(gameSessionRepository.findByGameCode("INVALID")).willReturn(null);
+        given(authenticationService.authenticateByToken("token-p1")).willReturn(user(1L, "token-p1"));
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+            () -> battleService.resolveAttack("INVALID", "token-p1", "FIREBALL"));
+
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+    }
+
+    @Test
+    void resolveAttack_gameNotInBattle_throws409() {
+        session.setGameStatus(GameStatus.WAITING);
+        given(gameSessionRepository.findByGameCode("ABC123")).willReturn(session);
+        given(authenticationService.authenticateByToken("token-p1")).willReturn(user(1L, "token-p1"));
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+            () -> battleService.resolveAttack("ABC123", "token-p1", "FIREBALL"));
+
+        assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
+    }
+
+    @Test
     void resolveAttack_lethalHitOnEvenTurn_endsGameAndSetsWinner() {
         // even turn + defender drops to <=0 -> game ends; attacker has more HP, so attacker wins
         primeBattle(TemperatureCategory.NEUTRAL, RainCategory.CLEAR, 2);

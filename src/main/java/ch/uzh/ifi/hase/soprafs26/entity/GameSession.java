@@ -58,6 +58,7 @@ public class GameSession implements Serializable {
             { this.id = id; }
 
         public String getGameCode() 
+        
             { return gameCode; }
 
         public void setGameCode(String gameCode) 
