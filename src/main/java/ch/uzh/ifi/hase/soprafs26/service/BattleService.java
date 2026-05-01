@@ -125,22 +125,39 @@ public class BattleService {
         // this guarantees the second player always gets a response swing before a loss is declared.
         boolean isEvenTurn = battleRepository.countTurnsByGameId(session.getId()) % 2 == 0;
         boolean battleEndedAfterRound = isEvenTurn && (attacker.getHp() <= 0 || defender.getHp() <= 0);
+        User attackerUser = userRepository.findById(attacker.getUserId())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Attacker user not found."));
+        User defenderUser = userRepository.findById(defender.getUserId())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Defender user not found."));
+
         if (battleEndedAfterRound) {
             if (attacker.getHp() > defender.getHp()) {
                 session.setWinnerId(attacker.getUserId()); // Attacker wins
+                //set stats in user table
+                attackerUser.setWins(attackerUser.getWins() + 1);
+                attackerUser.setTotalGames(attackerUser.getTotalGames() + 1);
+                attackerUser.setWinRate(attackerUser.getWins() / attackerUser.getTotalGames());
+
+                defenderUser.setLosses(defenderUser.getLosses() + 1);
+                defenderUser.setTotalGames(defenderUser.getTotalGames() + 1);
+                defenderUser.setWinRate(defenderUser.getWins() / defenderUser.getTotalGames());
             } else if (defender.getHp() > attacker.getHp()) {
                 session.setWinnerId(defender.getUserId()); // Defender wins
+                //set stats in user table
+                defenderUser.setWins(defenderUser.getWins() + 1);
+                defenderUser.setTotalGames(defenderUser.getTotalGames() + 1);
+                defenderUser.setWinRate(defenderUser.getWins() / defenderUser.getTotalGames());
+
+                attackerUser.setLosses(attackerUser.getLosses() + 1);
+                attackerUser.setTotalGames(attackerUser.getTotalGames() + 1);
+                attackerUser.setWinRate(attackerUser.getWins() / attackerUser.getTotalGames());
             } else {
                 session.setWinnerId(null); // Draw
             }
             // Clear current game session for both players
             session.setGameStatus(GameStatus.FINISHED);
-            User attackerUser = userRepository.findById(attacker.getUserId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Attacker user not found."));
             attackerUser.setCurrentGameSessionId(null);
             userRepository.save(attackerUser);
-            User defenderUser = userRepository.findById(defender.getUserId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Defender user not found."));
             defenderUser.setCurrentGameSessionId(null);
             userRepository.save(defenderUser);
         } else {
