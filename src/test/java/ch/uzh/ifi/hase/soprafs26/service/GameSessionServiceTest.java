@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -43,6 +44,9 @@ class GameSessionServiceTest {
 
     @Mock
     private WeatherService weatherService;
+
+    @Mock
+    private SimpMessagingTemplate messagingTemplate;
 
     @InjectMocks
     private GameSessionService gameSessionService;
