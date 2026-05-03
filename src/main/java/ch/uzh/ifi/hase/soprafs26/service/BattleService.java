@@ -242,6 +242,8 @@ public class BattleService {
         dto.setActivePlayerId(session.getActivePlayerId());
         dto.setPlayer1Hp(player1.getHp());
         dto.setPlayer2Hp(player2.getHp());
+        dto.setPlayer1MaxHp(player1.getMaxHp());
+        dto.setPlayer2MaxHp(player2.getMaxHp());
         dto.setDamageDealt(damage);
         dto.setAttackUsed(attackName);
         dto.setGameStatus(session.getGameStatus());

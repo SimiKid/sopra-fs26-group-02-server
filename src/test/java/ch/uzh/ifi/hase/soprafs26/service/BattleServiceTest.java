@@ -29,6 +29,7 @@ import ch.uzh.ifi.hase.soprafs26.repository.GameSessionRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.UserRepository;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.BattleResultGetDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.BattleStateDTO;
 
 public class BattleServiceTest {
 
@@ -258,6 +259,30 @@ public class BattleServiceTest {
         assertEquals(58, defender.getHp());
     }
 
+    @Test
+    void buildBattleState_setsMaxHpCorrectly() {
+        Player p1 = new Player();
+        p1.setUserId(1L);
+        p1.setHp(80);
+        p1.setMaxHp(100);
+
+        Player p2 = new Player();
+        p2.setUserId(2L);
+        p2.setHp(40);
+        p2.setMaxHp(150);
+
+        given(playerRepository.findByUserIdAndGameSessionId(1L, 1L)).willReturn(p1);
+        given(playerRepository.findByUserIdAndGameSessionId(2L, 1L)).willReturn(p2);
+
+        given(userRepository.findById(1L)).willReturn(Optional.of(user(1L, "t1")));
+        given(userRepository.findById(2L)).willReturn(Optional.of(user(2L, "t2")));
+
+        BattleStateDTO dto = battleService.buildBattleState(session, 0, null);
+
+        assertEquals(100, dto.getPlayer1MaxHp());
+        assertEquals(150, dto.getPlayer2MaxHp());
+    }
+
     // ---- helpers ----
 
     private void primeBattle(TemperatureCategory temp, RainCategory rain, int turnsAfterSave) {
@@ -291,6 +316,7 @@ public class BattleServiceTest {
         p.setUserId(userId);
         p.setGameSessionId(1L);
         p.setHp(hp);
+        p.setMaxHp(hp);
         p.setWizardClass(cls);
         // startTimer reads these when the battle continues
         p.setAttack1("FIREBALL");

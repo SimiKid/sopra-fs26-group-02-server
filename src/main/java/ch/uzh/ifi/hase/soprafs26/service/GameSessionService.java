@@ -233,7 +233,10 @@ public class GameSessionService {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid wizard class.");
 		}
 		player.setWizardClass(wc);
-		player.setHp((int)(100 * wc.getHpMultiplier()));
+
+		int hp = (int)(100 * wc.getHpMultiplier());
+		player.setHp(hp);
+		player.setMaxHp(hp);
 		
 		return playerRepository.save(player);
 	}

@@ -49,6 +49,9 @@ public class Player implements Serializable {
     private int hp;
 
     @Column(nullable = false)
+    private int maxHp;
+
+    @Column(nullable = false)
     private boolean ready;
 
     public Long getId() {
@@ -113,6 +116,14 @@ public class Player implements Serializable {
 
     public void setHp(int hp) {
         this.hp = hp;
+    }
+
+    public int getMaxHp() {
+        return maxHp;
+    }
+
+    public void setMaxHp(int maxHp) {
+        this.maxHp = maxHp;
     }
 
     public boolean isReady() {

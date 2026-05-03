@@ -11,6 +11,8 @@ public class BattleStateDTO {
     private Long activePlayerId;
     private int player1Hp;
     private int player2Hp;
+    private int player1MaxHp;
+    private int player2MaxHp;
     private int damageDealt;
     private String attackUsed;
     private GameStatus gameStatus;
@@ -47,6 +49,22 @@ public class BattleStateDTO {
     }
     public void setPlayer2Hp(int player2Hp) {
         this.player2Hp = player2Hp; 
+    }
+
+    public int getPlayer1MaxHp() {
+    return player1MaxHp;
+    }
+
+    public void setPlayer1MaxHp(int player1MaxHp) {
+        this.player1MaxHp = player1MaxHp;
+    }
+
+    public int getPlayer2MaxHp() {
+        return player2MaxHp;
+    }
+
+    public void setPlayer2MaxHp(int player2MaxHp) {
+        this.player2MaxHp = player2MaxHp;
     }
 
     public int getDamageDealt() {
