@@ -237,7 +237,6 @@ public class GameSessionService {
 		int hp = (int)(100 * wc.getHpMultiplier());
 		player.setHp(hp);
 		player.setMaxHp(hp);
-		
 		return playerRepository.save(player);
 	}
 
@@ -273,5 +272,9 @@ public class GameSessionService {
 			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 		p2.setCurrentGameSessionId(null);
 		userRepository.save(p2);
+	}
+
+	public long getBattleCount() {
+    	return gameSessionRepository.countStartedBattles();
 	}
 }

@@ -370,4 +370,13 @@ class GameSessionServiceTest {
         // then
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
     }
+
+    @Test
+    void getBattleCount_returnsCountFromRepository() {
+        given(gameSessionRepository.countStartedBattles()).willReturn(42L);
+
+        long count = gameSessionService.getBattleCount();
+
+        assertEquals(42L, count);
+}
 }
