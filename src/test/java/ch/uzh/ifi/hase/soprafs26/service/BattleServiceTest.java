@@ -21,6 +21,7 @@ import ch.uzh.ifi.hase.soprafs26.constant.RainCategory;
 import ch.uzh.ifi.hase.soprafs26.constant.TemperatureCategory;
 import ch.uzh.ifi.hase.soprafs26.constant.WizardClass;
 import ch.uzh.ifi.hase.soprafs26.entity.Battle;
+import ch.uzh.ifi.hase.soprafs26.entity.BattleResult;
 import ch.uzh.ifi.hase.soprafs26.entity.GameSession;
 import ch.uzh.ifi.hase.soprafs26.entity.Player;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
@@ -77,14 +78,14 @@ public class BattleServiceTest {
         given(battleRepository.sumDamageByGameId(1L)).willReturn(150);
         given(battleRepository.countTurnsByGameId(1L)).willReturn(5);
 
-        BattleResultGetDTO result = battleService.getBattleResult("ABC123");
+        BattleResult result = battleService.getBattleResult("ABC123");
 
         assertEquals(1L, result.getWinnerUserId());
         assertEquals(2L, result.getLoserUserId());
         assertEquals(150, result.getTotalDamageDealt());
         assertEquals(5, result.getTurnsPlayed());
-        assertEquals(RainCategory.CLEAR, result.getWeather().getRainCategory());
-        assertEquals(TemperatureCategory.HOT, result.getWeather().getTemperatureCategory());
+        assertEquals(RainCategory.CLEAR, result.getRain());
+        assertEquals(TemperatureCategory.HOT, result.getTemperature());
     }
 
     @Test
@@ -114,7 +115,7 @@ public class BattleServiceTest {
         given(battleRepository.sumDamageByGameId(1L)).willReturn(null);
         given(battleRepository.countTurnsByGameId(1L)).willReturn(0);
 
-        BattleResultGetDTO result = battleService.getBattleResult("ABC123");
+        BattleResult result = battleService.getBattleResult("ABC123");
 
         assertEquals(0, result.getTotalDamageDealt());
     }

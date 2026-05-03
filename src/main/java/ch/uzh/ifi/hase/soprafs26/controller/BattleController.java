@@ -3,8 +3,10 @@ package ch.uzh.ifi.hase.soprafs26.controller;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import ch.uzh.ifi.hase.soprafs26.entity.BattleResult;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.BattleResultGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.BattleStateDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs26.service.BattleService;
 
 /**
@@ -27,9 +29,10 @@ public class BattleController {
         return battleService.getBattleState(gameCode);
     }
 
-    @GetMapping("/games/{gameCode}/battles/result")
+    @GetMapping("/games/{gameCode}/result")
     @ResponseStatus(HttpStatus.OK)
     public BattleResultGetDTO getBattleResult(@PathVariable("gameCode") String gameCode){
-        return battleService.getBattleResult(gameCode);
+        BattleResult result = battleService.getBattleResult(gameCode);
+        return DTOMapper.INSTANCE.convertBattleResultToGetDTO(result);
     }        
 }

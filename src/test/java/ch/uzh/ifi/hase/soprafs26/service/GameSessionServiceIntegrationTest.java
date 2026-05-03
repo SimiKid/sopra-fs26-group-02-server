@@ -41,7 +41,7 @@ public class GameSessionServiceIntegrationTest {
 
     @MockitoBean private WeatherService weatherService;
 
-    @BeforeEach
+    @BeforeEach  
     public void stubWeather() {
         WeatherGetDTO w = new WeatherGetDTO();
         w.setRainCategory(RainCategory.CLEAR);
