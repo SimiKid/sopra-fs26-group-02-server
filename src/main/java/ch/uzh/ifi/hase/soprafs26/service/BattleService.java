@@ -3,7 +3,6 @@ package ch.uzh.ifi.hase.soprafs26.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -19,9 +18,7 @@ import ch.uzh.ifi.hase.soprafs26.repository.GameSessionRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.BattleRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.UserRepository;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.BattleResultGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.BattleStateDTO;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.WeatherGetDTO;
 import ch.uzh.ifi.hase.soprafs26.constant.Element;
 import ch.uzh.ifi.hase.soprafs26.constant.WeatherModifier;
 import ch.uzh.ifi.hase.soprafs26.constant.TemperatureCategory;
@@ -55,6 +52,7 @@ import java.util.Optional;
 public class BattleService {
     private final Logger log = LoggerFactory.getLogger(BattleService.class);
     private final GameSessionRepository gameSessionRepository;
+    private final GameSessionService gameSessionService;
     private final PlayerRepository playerRepository;
     private final AuthenticationService authenticationService;
     private final SimpMessagingTemplate messagingTemplate;
@@ -64,12 +62,14 @@ public class BattleService {
     private final TaskScheduler taskScheduler = new ConcurrentTaskScheduler(Executors.newScheduledThreadPool(2));
 
     public BattleService(GameSessionRepository gameSessionRepository,
+                         GameSessionService gameSessionService,
                          PlayerRepository playerRepository,
                          AuthenticationService authenticationService,
                          SimpMessagingTemplate messagingTemplate,
                          UserRepository userRepository,
                          BattleRepository battleRepository) {
         this.gameSessionRepository = gameSessionRepository;
+        this.gameSessionService = gameSessionService;
         this.playerRepository = playerRepository;
         this.authenticationService = authenticationService;
         this.messagingTemplate = messagingTemplate;
@@ -156,10 +156,8 @@ public class BattleService {
             }
             // Clear current game session for both players
             session.setGameStatus(GameStatus.FINISHED);
-            attackerUser.setCurrentGameSessionId(null);
-            userRepository.save(attackerUser);
-            defenderUser.setCurrentGameSessionId(null);
-            userRepository.save(defenderUser);
+            gameSessionService.nullifyGameSessionId(attackerUser.getId());
+            gameSessionService.nullifyGameSessionId(defenderUser.getId());
         } else {
             session.setActivePlayerId(defenderId);
             

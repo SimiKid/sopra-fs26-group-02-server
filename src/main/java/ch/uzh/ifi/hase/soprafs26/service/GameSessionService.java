@@ -1,5 +1,6 @@
 package ch.uzh.ifi.hase.soprafs26.service;
 
+import ch.uzh.ifi.hase.soprafs26.exceptions.GlobalExceptionAdvice;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -180,13 +181,11 @@ public class GameSessionService {
 			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game session not found"));
 		User user=userRepository.findById(gameSession.getPlayer1Id())
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
-        user.setCurrentGameSessionId(null);
-        userRepository.save(user);
+        nullifyGameSessionId(user.getId());
 		if (gameSession.getPlayer2Id() != null) {
         	user=userRepository.findById(gameSession.getPlayer2Id())
             	.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
-			user.setCurrentGameSessionId(null);
-			userRepository.save(user);
+			nullifyGameSessionId(user.getId());
 		}
 		gameSessionRepository.delete(gameSession);
 	}
@@ -201,8 +200,7 @@ public class GameSessionService {
 			log.info("Cleaning up expired game session with code {}", session.getGameCode());
 			
 				userRepository.findById(session.getPlayer1Id()).ifPresent(user -> {
-				user.setCurrentGameSessionId(null);
-				userRepository.save(user);
+				nullifyGameSessionId(user.getId());
 			});
 			
 			gameSessionRepository.delete(session);
@@ -262,16 +260,11 @@ public class GameSessionService {
 		return locationDTO;
 	}
 
-	public void clearPlayerCurrentSessions(Long player1Id, Long player2Id) {
-		User p1 = userRepository.findById(player1Id)
+	public void nullifyGameSessionId(Long userId) {
+		User user = userRepository.findById(userId)
 			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
-		p1.setCurrentGameSessionId(null);
-		userRepository.save(p1);
-
-		User p2 = userRepository.findById(player2Id)
-			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
-		p2.setCurrentGameSessionId(null);
-		userRepository.save(p2);
+		user.setCurrentGameSessionId(null);
+		userRepository.save(user);
 	}
 
 	public long getBattleCount() {

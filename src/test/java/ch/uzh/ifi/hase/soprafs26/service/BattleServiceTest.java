@@ -29,7 +29,6 @@ import ch.uzh.ifi.hase.soprafs26.repository.BattleRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.GameSessionRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.UserRepository;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.BattleResultGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.BattleStateDTO;
 
 public class BattleServiceTest {
