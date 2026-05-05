@@ -44,6 +44,3 @@ local.properties
 .xcode*
 
 /bin
-
-# contains secrets
-app.yaml

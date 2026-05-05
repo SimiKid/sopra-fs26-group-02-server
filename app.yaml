@@ -14,6 +14,6 @@ manual_scaling:
 env_variables:
   OPENWEATHER_API_KEY: ${OPENWEATHER_API_KEY}
   SPRING_PROFILES_ACTIVE: "prod"
-  DB_URL: "jdbc:postgresql://google/weatherwizards?cloudSqlInstance=sopra-fs26-group-02-server:europe-west6:weather-wizards-db&socketFactory=com.google.cloud.sql.postgres.SocketFactory"
-  DB_USER: "postgres"
-  DB_PASSWORD: '-9`{m\yXir@.}dg9'
+  DB_URL: DB_URL_PLACEHOLDER
+  DB_USER: DB_USER_PLACEHOLDER
+  DB_PASSWORD: DB_PASSWORD_PLACEHOLDER
