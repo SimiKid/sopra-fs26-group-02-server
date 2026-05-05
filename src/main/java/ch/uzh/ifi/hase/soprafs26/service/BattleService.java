@@ -136,21 +136,21 @@ public class BattleService {
                 //set stats in user table
                 attackerUser.setWins(attackerUser.getWins() + 1);
                 attackerUser.setTotalGames(attackerUser.getTotalGames() + 1);
-                attackerUser.setWinRate(attackerUser.getWins() / attackerUser.getTotalGames());
+                attackerUser.setWinRate((float) attackerUser.getWins() / attackerUser.getTotalGames());
 
                 defenderUser.setLosses(defenderUser.getLosses() + 1);
                 defenderUser.setTotalGames(defenderUser.getTotalGames() + 1);
-                defenderUser.setWinRate(defenderUser.getWins() / defenderUser.getTotalGames());
+                defenderUser.setWinRate((float) defenderUser.getWins() / defenderUser.getTotalGames());
             } else if (defender.getHp() > attacker.getHp()) {
                 session.setWinnerId(defender.getUserId()); // Defender wins
                 //set stats in user table
                 defenderUser.setWins(defenderUser.getWins() + 1);
                 defenderUser.setTotalGames(defenderUser.getTotalGames() + 1);
-                defenderUser.setWinRate(defenderUser.getWins() / defenderUser.getTotalGames());
+                defenderUser.setWinRate((float) defenderUser.getWins() / defenderUser.getTotalGames());
 
                 attackerUser.setLosses(attackerUser.getLosses() + 1);
                 attackerUser.setTotalGames(attackerUser.getTotalGames() + 1);
-                attackerUser.setWinRate(attackerUser.getWins() / attackerUser.getTotalGames());
+                attackerUser.setWinRate((float) attackerUser.getWins() / attackerUser.getTotalGames());
             } else {
                 session.setWinnerId(null); // Draw
             }
