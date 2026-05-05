@@ -82,7 +82,7 @@ The app uses an **H2 in-memory database** by default. No setup required — just
 
 The deployed app connects to a **PostgreSQL 18** instance on Google Cloud SQL (europe-west6).
 
-The following environment variables must be set (in `app.yaml`, never committed to git):
+The repository includes a committed `app.yaml` template with placeholders. The following environment variables are configured there and populated with real secret values at deploy time by the GitHub Actions workflow, so secrets must not be committed to git:
 
 | Variable | Description |
 |---|---|
