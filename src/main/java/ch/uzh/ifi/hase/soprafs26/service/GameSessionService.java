@@ -25,6 +25,7 @@ import ch.uzh.ifi.hase.soprafs26.entity.Player;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.WeatherGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.LocationGetDTO;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -51,12 +52,14 @@ public class GameSessionService {
 	private final PlayerRepository playerRepository;
 	private final UserRepository userRepository;
 	private final WeatherService weatherService;
+	private final SimpMessagingTemplate simpleMessagingTemplate;
 
-	public GameSessionService(@Qualifier("gameSessionRepository") GameSessionRepository gameSessionRepository, @Qualifier("playerRepository") PlayerRepository playerRepository, UserRepository userRepository, WeatherService weatherService) {
+	public GameSessionService(@Qualifier("gameSessionRepository") GameSessionRepository gameSessionRepository, @Qualifier("playerRepository") PlayerRepository playerRepository, UserRepository userRepository, WeatherService weatherService, SimpMessagingTemplate simpleMessagingTemplate) {
 		this.gameSessionRepository = gameSessionRepository;
 		this.playerRepository = playerRepository;
 		this.userRepository = userRepository;
 		this.weatherService = weatherService;
+		this.simpleMessagingTemplate = simpleMessagingTemplate;
 	}
 
 	private static final int MAX_ATTEMPTS = 5;
@@ -166,6 +169,9 @@ public class GameSessionService {
         userRepository.save(user); 
 
 		log.info("Player {} joined game session {}", player2Id, gameCode);
+
+		simpleMessagingTemplate.convertAndSend("/topic/game/" + gameCode + "/lobby", "PLAYER_JOINED");
+		
 		return gameSession;
 	}
 
@@ -227,8 +233,10 @@ public class GameSessionService {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid wizard class.");
 		}
 		player.setWizardClass(wc);
-		player.setHp((int)(100 * wc.getHpMultiplier()));
-		
+
+		int hp = (int)(100 * wc.getHpMultiplier());
+		player.setHp(hp);
+		player.setMaxHp(hp);
 		return playerRepository.save(player);
 	}
 
@@ -264,5 +272,9 @@ public class GameSessionService {
 			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 		p2.setCurrentGameSessionId(null);
 		userRepository.save(p2);
+	}
+
+	public long getBattleCount() {
+    	return gameSessionRepository.countStartedBattles();
 	}
 }

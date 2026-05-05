@@ -46,6 +46,11 @@ public class User implements Serializable {
 	
 	private Long  currentGameSessionId;
 
+	private int totalGames;
+	private int wins;
+	private int losses;
+	private float WinRate;
+	
 	public Long getId() {
 		return id;
 	}
@@ -101,4 +106,36 @@ public class User implements Serializable {
 	public void setCurrentGameSessionId(Long currentGameSessionId) {
 		this.currentGameSessionId = currentGameSessionId;
 	}	
+
+	public int getWins() {
+		return wins;
+	}
+
+	public void setWins(int wins) {
+		this.wins = wins;
+	}
+	
+	public int getLosses() {
+		return losses;
+	}
+
+	public void setLosses(int losses) {
+		this.losses = losses;
+	}
+	
+	public float getWinRate() {
+		return WinRate;
+	}
+
+	public void setWinRate(float WinRate) {
+		this.WinRate = WinRate;
+	}
+
+	public int getTotalGames() {
+		return totalGames;
+	}
+
+	public void setTotalGames(int totalGames) {
+		this.totalGames = totalGames;
+	}
 }

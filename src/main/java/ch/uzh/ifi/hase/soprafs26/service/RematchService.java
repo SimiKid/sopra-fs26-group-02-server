@@ -6,6 +6,8 @@ import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.repository.GameSessionRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.UserRepository;
 
+import java.util.Optional;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,10 +41,8 @@ public class RematchService {
         User user = authenticationService.authenticateByToken(token);
         Long userId = user.getId();
 
-        GameSession oldSession = gameSessionRepository.findByGameCode(gameCode);
-        if (oldSession == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found.");
-        }
+        GameSession oldSession = Optional.ofNullable(gameSessionRepository.findByGameCode(gameCode))
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found."));
 
         if (oldSession.getGameStatus() != GameStatus.FINISHED) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Game is not finished yet.");
@@ -53,6 +53,24 @@ public class RematchService {
             return;
         }
 
+        registerRematchVote(userId, oldSession);
+        gameSessionRepository.save(oldSession);
+
+        // re-read to pick up the other player's vote if they saved concurrently
+        GameSession freshSession = Optional.ofNullable(gameSessionRepository.findByGameCode(gameCode))
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found."));
+
+        // both players have opted in -> spin up the rematch game
+        if (freshSession.getPlayer1WantsRematch() && freshSession.getPlayer2WantsRematch()) {
+            String newCode = createRematchGame(freshSession.getPlayer1Id(), freshSession.getPlayer2Id(),  freshSession.getId());
+            freshSession.setRematchGameCode(newCode);
+            freshSession.setPlayer1WantsRematch(false);
+            freshSession.setPlayer2WantsRematch(false);
+            gameSessionRepository.save(freshSession);
+        }
+    }
+
+    private void registerRematchVote(Long userId, GameSession oldSession) {
         boolean isPlayer1 = userId.equals(oldSession.getPlayer1Id());
         boolean isPlayer2 = userId.equals(oldSession.getPlayer2Id());
         if (!isPlayer1 && !isPlayer2) {
@@ -64,34 +82,18 @@ public class RematchService {
         } else {
             oldSession.setPlayer2WantsRematch(true);
         }
-        gameSessionRepository.save(oldSession);
-
-        // re-read to pick up the other player's vote if they saved concurrently
-        GameSession freshSession = gameSessionRepository.findByGameCode(gameCode);
-
-        // both players have opted in -> spin up the rematch game
-        if (freshSession.getPlayer1WantsRematch() && freshSession.getPlayer2WantsRematch()) {
-            String newCode = createRematchGame(freshSession);
-            freshSession.setRematchGameCode(newCode);
-            freshSession.setPlayer1WantsRematch(false);
-            freshSession.setPlayer2WantsRematch(false);
-            gameSessionRepository.save(freshSession);
-        }
     }
 
-    private String createRematchGame(GameSession oldSession) {
-        Long player1Id = oldSession.getPlayer1Id();
-        Long player2Id = oldSession.getPlayer2Id();
-
+    private String createRematchGame(Long player1Id, Long player2Id, Long oldSession) {
         User user1 = userRepository.findById(player1Id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User1 not found."));
         User user2 = userRepository.findById(player2Id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User2 not found."));
 
         boolean p1InOtherGame = user1.getCurrentGameSessionId() != null
-        && !user1.getCurrentGameSessionId().equals(oldSession.getId());
+        && !user1.getCurrentGameSessionId().equals(oldSession);
         boolean p2InOtherGame = user2.getCurrentGameSessionId() != null
-            && !user2.getCurrentGameSessionId().equals(oldSession.getId());
+            && !user2.getCurrentGameSessionId().equals(oldSession);
 
         if (p1InOtherGame || p2InOtherGame) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,

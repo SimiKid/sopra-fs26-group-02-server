@@ -18,6 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 import ch.uzh.ifi.hase.soprafs26.interceptor.AuthInterceptor;
 import ch.uzh.ifi.hase.soprafs26.constant.RainCategory;
 import ch.uzh.ifi.hase.soprafs26.constant.TemperatureCategory;
+import ch.uzh.ifi.hase.soprafs26.entity.BattleResult;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.BattleResultGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.BattleStateDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.WeatherGetDTO;
@@ -66,30 +67,27 @@ public class BattleControllerTest {
             .andExpect(status().isNotFound());
     }
 
-    @Test
-    void getBattleResult_success_returnsOk() throws Exception {
-        WeatherGetDTO weather = new WeatherGetDTO();
-        weather.setRainCategory(RainCategory.CLEAR);
-        weather.setTemperatureCategory(TemperatureCategory.HOT);
+@Test
+void getBattleResult_success_returnsOk() throws Exception {
+    BattleResult result = new BattleResult();
+    result.setWinnerUserId(1L);
+    result.setLoserUserId(2L);
+    result.setTotalDamageDealt(150);
+    result.setTurnsPlayed(5);
+    result.setRain(RainCategory.CLEAR);
+    result.setTemperature(TemperatureCategory.HOT);
 
-        BattleResultGetDTO dto = new BattleResultGetDTO();
-        dto.setWinnerUserId(1L);
-        dto.setLoserUserId(2L);
-        dto.setTotalDamageDealt(150);
-        dto.setTurnsPlayed(5);
-        dto.setWeather(weather);
+    given(battleService.getBattleResult("ABC123")).willReturn(result);
 
-        given(battleService.getBattleResult("ABC123")).willReturn(dto);
-
-        mockMvc.perform(get("/games/ABC123/battles/result"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.winnerUserId", is(1)))
-            .andExpect(jsonPath("$.loserUserId", is(2)))
-            .andExpect(jsonPath("$.totalDamageDealt", is(150)))
-            .andExpect(jsonPath("$.turnsPlayed", is(5)))
-            .andExpect(jsonPath("$.weather.rainCategory", is("CLEAR")))
-            .andExpect(jsonPath("$.weather.temperatureCategory", is("HOT")));
-    }
+    mockMvc.perform(get("/games/ABC123/result"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.winnerUserId", is(1)))
+        .andExpect(jsonPath("$.loserUserId", is(2)))
+        .andExpect(jsonPath("$.totalDamageDealt", is(150)))
+        .andExpect(jsonPath("$.turnsPlayed", is(5)))
+        .andExpect(jsonPath("$.weather.rainCategory", is("CLEAR")))
+        .andExpect(jsonPath("$.weather.temperatureCategory", is("HOT")));
+}
 
     @Test
     void getBattleResult_notFound_returns404() throws Exception {

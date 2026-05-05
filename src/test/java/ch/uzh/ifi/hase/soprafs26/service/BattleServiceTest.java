@@ -21,6 +21,7 @@ import ch.uzh.ifi.hase.soprafs26.constant.RainCategory;
 import ch.uzh.ifi.hase.soprafs26.constant.TemperatureCategory;
 import ch.uzh.ifi.hase.soprafs26.constant.WizardClass;
 import ch.uzh.ifi.hase.soprafs26.entity.Battle;
+import ch.uzh.ifi.hase.soprafs26.entity.BattleResult;
 import ch.uzh.ifi.hase.soprafs26.entity.GameSession;
 import ch.uzh.ifi.hase.soprafs26.entity.Player;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
@@ -29,6 +30,7 @@ import ch.uzh.ifi.hase.soprafs26.repository.GameSessionRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.UserRepository;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.BattleResultGetDTO;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.BattleStateDTO;
 
 public class BattleServiceTest {
 
@@ -76,14 +78,14 @@ public class BattleServiceTest {
         given(battleRepository.sumDamageByGameId(1L)).willReturn(150);
         given(battleRepository.countTurnsByGameId(1L)).willReturn(5);
 
-        BattleResultGetDTO result = battleService.getBattleResult("ABC123");
+        BattleResult result = battleService.getBattleResult("ABC123");
 
         assertEquals(1L, result.getWinnerUserId());
         assertEquals(2L, result.getLoserUserId());
         assertEquals(150, result.getTotalDamageDealt());
         assertEquals(5, result.getTurnsPlayed());
-        assertEquals(RainCategory.CLEAR, result.getWeather().getRainCategory());
-        assertEquals(TemperatureCategory.HOT, result.getWeather().getTemperatureCategory());
+        assertEquals(RainCategory.CLEAR, result.getRain());
+        assertEquals(TemperatureCategory.HOT, result.getTemperature());
     }
 
     @Test
@@ -113,7 +115,7 @@ public class BattleServiceTest {
         given(battleRepository.sumDamageByGameId(1L)).willReturn(null);
         given(battleRepository.countTurnsByGameId(1L)).willReturn(0);
 
-        BattleResultGetDTO result = battleService.getBattleResult("ABC123");
+        BattleResult result = battleService.getBattleResult("ABC123");
 
         assertEquals(0, result.getTotalDamageDealt());
     }
@@ -151,6 +153,29 @@ public class BattleServiceTest {
             () -> battleService.resolveAttack("ABC123", "token-p1", "FIREBALL"));
 
         assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
+    }
+
+    @Test
+    void resolveAttack_unknownGameCode_throws404() {
+        given(gameSessionRepository.findByGameCode("INVALID")).willReturn(null);
+        given(authenticationService.authenticateByToken("token-p1")).willReturn(user(1L, "token-p1"));
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+            () -> battleService.resolveAttack("INVALID", "token-p1", "FIREBALL"));
+
+        assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
+    }
+
+    @Test
+    void resolveAttack_gameNotInBattle_throws409() {
+        session.setGameStatus(GameStatus.WAITING);
+        given(gameSessionRepository.findByGameCode("ABC123")).willReturn(session);
+        given(authenticationService.authenticateByToken("token-p1")).willReturn(user(1L, "token-p1"));
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+            () -> battleService.resolveAttack("ABC123", "token-p1", "FIREBALL"));
+
+        assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
     }
 
     @Test
@@ -235,6 +260,30 @@ public class BattleServiceTest {
         assertEquals(58, defender.getHp());
     }
 
+    @Test
+    void buildBattleState_setsMaxHpCorrectly() {
+        Player p1 = new Player();
+        p1.setUserId(1L);
+        p1.setHp(80);
+        p1.setMaxHp(100);
+
+        Player p2 = new Player();
+        p2.setUserId(2L);
+        p2.setHp(40);
+        p2.setMaxHp(150);
+
+        given(playerRepository.findByUserIdAndGameSessionId(1L, 1L)).willReturn(p1);
+        given(playerRepository.findByUserIdAndGameSessionId(2L, 1L)).willReturn(p2);
+
+        given(userRepository.findById(1L)).willReturn(Optional.of(user(1L, "t1")));
+        given(userRepository.findById(2L)).willReturn(Optional.of(user(2L, "t2")));
+
+        BattleStateDTO dto = battleService.buildBattleState(session, 0, null);
+
+        assertEquals(100, dto.getPlayer1MaxHp());
+        assertEquals(150, dto.getPlayer2MaxHp());
+    }
+
     // ---- helpers ----
 
     private void primeBattle(TemperatureCategory temp, RainCategory rain, int turnsAfterSave) {
@@ -268,6 +317,7 @@ public class BattleServiceTest {
         p.setUserId(userId);
         p.setGameSessionId(1L);
         p.setHp(hp);
+        p.setMaxHp(hp);
         p.setWizardClass(cls);
         // startTimer reads these when the battle continues
         p.setAttack1("FIREBALL");

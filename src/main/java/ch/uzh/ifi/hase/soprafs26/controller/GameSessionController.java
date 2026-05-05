@@ -100,5 +100,15 @@ public class GameSessionController {
             @Parameter(description = "The unique game code") @PathVariable("gameCode") String gameCode) {
         gameSessionService.deleteByGameCode(gameCode);
     }
+
+    @GetMapping("/battles/count")
+    @ResponseStatus(HttpStatus.OK)
+    @Operation(summary = "Get total number of battles played")
+    @ApiResponses(value = {
+    @ApiResponse(responseCode = "200", description = "Battle count returned")
+    })
+    public long getBattleCount() {
+        return gameSessionService.getBattleCount();
+    }
 }
 	

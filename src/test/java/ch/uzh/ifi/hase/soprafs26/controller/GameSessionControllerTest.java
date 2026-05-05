@@ -33,6 +33,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 
 @WebMvcTest(GameSessionController.class)
 public class GameSessionControllerTest {
@@ -314,5 +315,14 @@ public class GameSessionControllerTest {
         // then
         mockMvc.perform(putRequest)
             .andExpect(status().isConflict());
+    }
+
+    @Test
+    void getBattleCount_returnsOk() throws Exception {
+        given(gameSessionService.getBattleCount()).willReturn(42L);
+
+        mockMvc.perform(get("/battles/count"))
+            .andExpect(status().isOk())
+            .andExpect(content().string("42"));
     }
 }

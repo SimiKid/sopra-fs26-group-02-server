@@ -19,6 +19,9 @@ public interface GameSessionRepository extends JpaRepository<GameSession, Long> 
          + "AND g.gameStatus = ch.uzh.ifi.hase.soprafs26.constant.GameStatus.FINISHED "
          + "ORDER BY g.createdAt DESC")
     List<GameSession> findFinishedGamesForUser(@Param("userId") Long userId);
+
+    @Query("SELECT COUNT(g) FROM GameSession g WHERE g.gameStatus = ch.uzh.ifi.hase.soprafs26.constant.GameStatus.BATTLE OR g.gameStatus = ch.uzh.ifi.hase.soprafs26.constant.GameStatus.FINISHED")
+    long countStartedBattles();
 }
 
 

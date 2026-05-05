@@ -4,9 +4,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import ch.uzh.ifi.hase.soprafs26.entity.User;
+import java.util.List;
 
 @Repository("userRepository")
 public interface UserRepository extends JpaRepository<User, Long> {
 	User findByUsername(String username);
 	User findByToken(String token);
+	List<User> findTop50ByWinsGreaterThanOrderByWinsDesc(int wins);
+	List<User> findTop5ByWinsGreaterThanOrderByWinsDesc(int wins);
 }

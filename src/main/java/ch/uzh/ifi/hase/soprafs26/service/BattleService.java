@@ -3,6 +3,7 @@ package ch.uzh.ifi.hase.soprafs26.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -10,6 +11,7 @@ import org.springframework.web.server.ResponseStatusException;
 import ch.uzh.ifi.hase.soprafs26.constant.Attack;
 import ch.uzh.ifi.hase.soprafs26.constant.GameStatus;
 import ch.uzh.ifi.hase.soprafs26.entity.Battle;
+import ch.uzh.ifi.hase.soprafs26.entity.BattleResult;
 import ch.uzh.ifi.hase.soprafs26.entity.GameSession;
 import ch.uzh.ifi.hase.soprafs26.entity.Player;
 import ch.uzh.ifi.hase.soprafs26.entity.User;
@@ -40,7 +42,7 @@ import java.util.concurrent.Executors;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
-
+import java.util.Optional;
 /**
  * Core battle orchestrator. Resolves incoming attacks, computes damage
  * (attack base × wizard class multiplier × weather modifier), logs each
@@ -77,11 +79,13 @@ public class BattleService {
 
     public void resolveAttack(String gameCode, String token, String attackName){
         User user = authenticationService.authenticateByToken(token);
-        GameSession session = gameSessionRepository.findByGameCode(gameCode);
+        GameSession session = Optional.ofNullable(gameSessionRepository.findByGameCode(gameCode))
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found."));
+        
         stopTimer(gameCode);
 
-        if (session == null || session.getGameStatus() != GameStatus.BATTLE) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Game not in battle phase.");
+        if (session.getGameStatus() != GameStatus.BATTLE){
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Game not in battle phase.");
         }
 
         if (!user.getId().equals(session.getActivePlayerId())) {
@@ -120,22 +124,39 @@ public class BattleService {
         // this guarantees the second player always gets a response swing before a loss is declared.
         boolean isEvenTurn = battleRepository.countTurnsByGameId(session.getId()) % 2 == 0;
         boolean battleEndedAfterRound = isEvenTurn && (attacker.getHp() <= 0 || defender.getHp() <= 0);
+        User attackerUser = userRepository.findById(attacker.getUserId())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Attacker user not found."));
+        User defenderUser = userRepository.findById(defender.getUserId())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Defender user not found."));
+
         if (battleEndedAfterRound) {
             if (attacker.getHp() > defender.getHp()) {
                 session.setWinnerId(attacker.getUserId()); // Attacker wins
+                //set stats in user table
+                attackerUser.setWins(attackerUser.getWins() + 1);
+                attackerUser.setTotalGames(attackerUser.getTotalGames() + 1);
+                attackerUser.setWinRate(attackerUser.getWins() / attackerUser.getTotalGames());
+
+                defenderUser.setLosses(defenderUser.getLosses() + 1);
+                defenderUser.setTotalGames(defenderUser.getTotalGames() + 1);
+                defenderUser.setWinRate(defenderUser.getWins() / defenderUser.getTotalGames());
             } else if (defender.getHp() > attacker.getHp()) {
                 session.setWinnerId(defender.getUserId()); // Defender wins
+                //set stats in user table
+                defenderUser.setWins(defenderUser.getWins() + 1);
+                defenderUser.setTotalGames(defenderUser.getTotalGames() + 1);
+                defenderUser.setWinRate(defenderUser.getWins() / defenderUser.getTotalGames());
+
+                attackerUser.setLosses(attackerUser.getLosses() + 1);
+                attackerUser.setTotalGames(attackerUser.getTotalGames() + 1);
+                attackerUser.setWinRate(attackerUser.getWins() / attackerUser.getTotalGames());
             } else {
                 session.setWinnerId(null); // Draw
             }
             // Clear current game session for both players
             session.setGameStatus(GameStatus.FINISHED);
-            User attackerUser = userRepository.findById(attacker.getUserId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Attacker user not found."));
             attackerUser.setCurrentGameSessionId(null);
             userRepository.save(attackerUser);
-            User defenderUser = userRepository.findById(defender.getUserId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Defender user not found."));
             defenderUser.setCurrentGameSessionId(null);
             userRepository.save(defenderUser);
         } else {
@@ -220,6 +241,8 @@ public class BattleService {
         dto.setActivePlayerId(session.getActivePlayerId());
         dto.setPlayer1Hp(player1.getHp());
         dto.setPlayer2Hp(player2.getHp());
+        dto.setPlayer1MaxHp(player1.getMaxHp());
+        dto.setPlayer2MaxHp(player2.getMaxHp());
         dto.setDamageDealt(damage);
         dto.setAttackUsed(attackName);
         dto.setGameStatus(session.getGameStatus());
@@ -239,36 +262,30 @@ public class BattleService {
         return dto;
     }
 
-    public BattleResultGetDTO getBattleResult(String gameCode){
+    public BattleResult getBattleResult(String gameCode) {
         GameSession session = gameSessionRepository.findByGameCode(gameCode);
         if (session == null || session.getGameStatus() != GameStatus.FINISHED) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Battle not finished or not found.");
         }
 
-        WeatherGetDTO weatherDTO = new WeatherGetDTO();
-        weatherDTO.setRainCategory(session.getRain());
-        weatherDTO.setTemperatureCategory(session.getTemperature());
-
-        BattleResultGetDTO result = new BattleResultGetDTO();
-	
-        // draw results in null winner and loser
         Long winnerUserId = session.getWinnerId();
-        result.setWinnerUserId(winnerUserId);
         Long loserUserId = null;
         if (winnerUserId != null) {
             loserUserId = winnerUserId.equals(session.getPlayer1Id())
                 ? session.getPlayer2Id()
                 : session.getPlayer1Id();
         }
-        result.setLoserUserId(loserUserId);
 
         Integer totalDamage = battleRepository.sumDamageByGameId(session.getId());
-        result.setTotalDamageDealt(totalDamage != null ? totalDamage : 0);
-
         int turnsPlayed = battleRepository.countTurnsByGameId(session.getId());
+
+        BattleResult result = new BattleResult();
+        result.setWinnerUserId(winnerUserId);
+        result.setLoserUserId(loserUserId);
+        result.setTotalDamageDealt(totalDamage != null ? totalDamage : 0);
         result.setTurnsPlayed(turnsPlayed);
-        
-        result.setWeather(weatherDTO);
+        result.setRain(session.getRain());
+        result.setTemperature(session.getTemperature());
 
         return result;
     } 
