@@ -18,4 +18,7 @@ public interface BattleRepository extends JpaRepository<Battle, Long> {
 
     @Query("SELECT COUNT(b) FROM Battle b WHERE b.gameId = :gameId")
     Integer countTurnsByGameId(@Param("gameId") Long gameId);
+
+    @Query("SELECT b FROM Battle b WHERE b.gameId = :gameId AND b.turnNumber = :turnNumber")
+    Battle findByGameIdAndTurnNumber(@Param("gameId") Long gameId, @Param("turnNumber") Integer turnNumber);
 }

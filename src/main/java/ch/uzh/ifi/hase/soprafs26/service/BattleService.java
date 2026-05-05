@@ -81,7 +81,7 @@ public class BattleService {
         User user = authenticationService.authenticateByToken(token);
         GameSession session = Optional.ofNullable(gameSessionRepository.findByGameCode(gameCode))
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found."));
-        
+        session.setCurrentTurnNumber(session.getCurrentTurnNumber() + 1);
         stopTimer(gameCode);
 
         if (session.getGameStatus() != GameStatus.BATTLE){
@@ -115,6 +115,7 @@ public class BattleService {
         battleLog.setCurrentAction(attack);
         battleLog.setDamageDealt(damage);
         battleLog.setTimeStamp(LocalDateTime.now());
+        battleLog.setTurnNumber(session.getCurrentTurnNumber());
         battleRepository.save(battleLog);
 
         defender.setHp(defender.getHp() - damage);
@@ -166,7 +167,7 @@ public class BattleService {
 
         gameSessionRepository.save(session);
         BattleStateDTO state = buildBattleState(session, damage, attackName);
-        startTimer(gameCode, session, state);
+        startTimer(gameCode, session);
         broadcastAfterCommit(gameCode, state);
     }
 
@@ -301,14 +302,20 @@ public class BattleService {
     // three selected attacks fires automatically on their behalf so the
     // battle can't stall indefinitely. Any new startTimer call cancels the
     // previous one for the same gameCode.
-    public void startTimer(String gameCode, GameSession session, BattleStateDTO dto) {
+    public void startTimer(String gameCode, GameSession session) {
         stopTimer(gameCode);
         Player attacker = playerRepository.findByUserIdAndGameSessionId(
             session.getActivePlayerId(),
             session.getId()
         );
-        
-        LocalDateTime startTime = dto.getTimeStamp();
+        LocalDateTime startTime;
+        if (session.getCurrentTurnNumber()==0){
+            startTime = session.getStartedAt();
+        } else {
+            Battle battle=battleRepository.findByGameIdAndTurnNumber(session.getId(), session.getCurrentTurnNumber());
+            startTime=battle.getTimeStamp();
+        }
+
         Instant executionTime = startTime.plusSeconds(30).atZone(ZoneId.systemDefault()).toInstant();
         
         ScheduledFuture<?> task = taskScheduler.schedule(() -> {

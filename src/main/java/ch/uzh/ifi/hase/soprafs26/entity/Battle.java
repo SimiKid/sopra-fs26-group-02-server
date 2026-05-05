@@ -22,6 +22,9 @@ public class Battle implements Serializable {
     private Long id;
 
     @Column(nullable = false)
+    private Integer turnNumber;
+
+    @Column(nullable = false)
     private Long gameId;
 
     @Column(nullable = false)
@@ -46,6 +49,14 @@ public class Battle implements Serializable {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public Integer getTurnNumber() {
+        return turnNumber;
+    }
+
+    public void setTurnNumber(Integer turnNumber) {
+        this.turnNumber = turnNumber;
     }
 
     public Long getGameId() {
