@@ -123,7 +123,8 @@ public class BattleService {
 
         // a "round" = both players have attacked, so the battle can only end on even turn counts;
         // this guarantees the second player always gets a response swing before a loss is declared.
-        boolean isEvenTurn = battleRepository.countTurnsByGameId(session.getId()) % 2 == 0;
+        int totalTurns = battleRepository.countTurnsByGameId(session.getId());
+        boolean isEvenTurn = totalTurns % 2 == 0;
         boolean battleEndedAfterRound = isEvenTurn && (attacker.getHp() <= 0 || defender.getHp() <= 0);
         User attackerUser = userRepository.findById(attacker.getUserId())
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Attacker user not found."));
