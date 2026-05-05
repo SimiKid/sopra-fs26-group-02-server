@@ -21,7 +21,16 @@ public class LeaderboardService {
     }
 
     public List<LeaderboardGetDTO> getLeaderboard() {
-		List<User> users = userRepository.findAllByOrderByWinsDesc();
+		List<User> users = userRepository.findTop50ByWinsGreaterThanOrderByWinsDesc(0);
+		List<LeaderboardGetDTO> leaderboard = new ArrayList<>();
+		for (User user : users) {
+			leaderboard.add(buildLeaderboard(user));
+		}
+		return leaderboard;
+	}
+
+    public List<LeaderboardGetDTO> getLeaderboard5() {
+		List<User> users = userRepository.findTop5ByWinsGreaterThanOrderByWinsDesc(0);
 		List<LeaderboardGetDTO> leaderboard = new ArrayList<>();
 		for (User user : users) {
 			leaderboard.add(buildLeaderboard(user));
