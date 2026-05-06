@@ -11,10 +11,10 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import ch.uzh.ifi.hase.soprafs26.entity.GameSession;
-import ch.uzh.ifi.hase.soprafs26.constant.GameStatus;
 import ch.uzh.ifi.hase.soprafs26.repository.GameSessionRepository;
-import ch.uzh.ifi.hase.soprafs26.entity.User;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.scheduling.annotation.Scheduled;
+import ch.uzh.ifi.hase.soprafs26.service.GameSessionService;
 
 
 @Service
@@ -25,11 +25,13 @@ public class MatchMakingService {
     private final UserRepository userRepository;
     private final GameSessionRepository gameSessionRepository;  
     private final SimpMessagingTemplate messagingTemplate;
-    public MatchMakingService(MatchMakingRepository matchMakingRepository, UserRepository userRepository, GameSessionRepository gameSessionRepository, SimpMessagingTemplate messagingTemplate) {
+    private final GameSessionService gameSessionService;
+    public MatchMakingService(MatchMakingRepository matchMakingRepository, UserRepository userRepository, GameSessionRepository gameSessionRepository, SimpMessagingTemplate messagingTemplate, GameSessionService gameSessionService) {
         this.matchMakingRepository = matchMakingRepository;
         this.userRepository = userRepository;
         this.gameSessionRepository = gameSessionRepository;
         this.messagingTemplate = messagingTemplate;
+        this.gameSessionService = gameSessionService;
     }
 
 
@@ -79,14 +81,15 @@ public class MatchMakingService {
     }
 
     private GameSession createGameSession(Long userId1, Long userId2) {
-        GameSession gameSession = new GameSession();
-        gameSession.setPlayer1Id(userId1);
-        gameSession.setPlayer2Id(userId2);
-        gameSession.setGameCode("ABC123");
-        gameSession.setGameStatus(GameStatus.WAITING);
-        gameSession.setCreatedAt(LocalDateTime.now());
-        return gameSessionRepository.save(gameSession);
+        GameSession newGameSession = new GameSession();
+        newGameSession.setPlayer1Id(userId1);
+        newGameSession.setPlayer2Id(userId2);
+        return gameSessionService.createGameSession(newGameSession);
     }
 
-    
+    @Scheduled(fixedDelay = 5000) 
+    public void purgeExpiredEntries() {
+        LocalDateTime cutoff = LocalDateTime.now().minusSeconds(60);
+        matchMakingRepository.deleteByJoinedAtBeforeAndMatchedGameCodeIsNull(cutoff);
+    }
 }
