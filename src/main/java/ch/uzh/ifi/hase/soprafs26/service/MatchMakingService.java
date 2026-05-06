@@ -92,4 +92,11 @@ public class MatchMakingService {
         LocalDateTime cutoff = LocalDateTime.now().minusSeconds(60);
         matchMakingRepository.deleteByJoinedAtBeforeAndMatchedGameCodeIsNull(cutoff);
     }
+
+    public void leaveGameSession(Long userId) {
+        MatchMaking myEntry = matchMakingRepository.findById(userId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        matchMakingRepository.delete(myEntry);
+        return;
+    }
 }

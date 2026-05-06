@@ -3,7 +3,9 @@ package ch.uzh.ifi.hase.soprafs26.controller;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import ch.uzh.ifi.hase.soprafs26.service.MatchMakingService;
+import ch.uzh.ifi.hase.soprafs26.entity.User;
 import ch.uzh.ifi.hase.soprafs26.service.AuthenticationService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -33,5 +35,18 @@ public class MatchMakingController {
     public void joinRandomGameSession(@RequestHeader("Authorization") String token) {
         Long userId = authenticationService.authenticateByToken(token).getId();
         matchMakingService.joinRandomGameSession(userId);
+    }
+
+    @DeleteMapping("/matchmaking/leave")
+    @ResponseStatus(HttpStatus.OK)
+    @ResponseBody
+    @Operation(summary = "Leave a waiting game session", description = "Leaves a waiting game session for the authenticated user")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Game session left successfully"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing token")
+    })
+    public void leaveGameSession(@RequestHeader("Authorization") String token) {
+        Long userId = authenticationService.authenticateByToken(token).getId();
+        matchMakingService.leaveGameSession(userId);
     }
 }
