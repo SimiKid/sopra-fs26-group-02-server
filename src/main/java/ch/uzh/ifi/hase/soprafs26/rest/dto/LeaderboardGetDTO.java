@@ -15,6 +15,8 @@ public class LeaderboardGetDTO {
     private int losses;
     @Schema(description = "Win rate of the user", example = "0.6666666666666666")
     private float winRate;
+    @Schema(description = "ID of the user", example = "1")
+    private Long userId;
 
     public void setUsername(String username){
         this.username = username;
@@ -36,6 +38,10 @@ public class LeaderboardGetDTO {
         this.winRate = winRate;
     }
 
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+    
     public String getUsername(){
         return username;
     }
@@ -54,5 +60,9 @@ public class LeaderboardGetDTO {
     
     public float getWinRate(){
         return winRate;
+    }
+
+    public Long getUserId() {
+        return userId;
     }
 }

@@ -45,6 +45,7 @@ public class LeaderboardService {
         dto.setWins(user.getWins());
         dto.setLosses(user.getLosses());
         dto.setWinRate(user.getWinRate());
+		dto.setUserId(user.getId());
 		return dto;
 	}
 }
