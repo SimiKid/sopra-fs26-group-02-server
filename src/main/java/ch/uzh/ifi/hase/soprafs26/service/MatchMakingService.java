@@ -50,6 +50,7 @@ public class MatchMakingService {
             matchMakingRepository.delete(myEntry);
             matchMakingRepository.delete(opponent);
         }
+        return;
     }
 
 
@@ -70,7 +71,7 @@ public class MatchMakingService {
     }
 
     private MatchMaking searchOpponent(Long userId) {
-        Optional<MatchMaking> opponent = matchMakingRepository.findFirstByIdNotAndMatchedGameIdIsNullOrderByJoinedAtAsc(userId);
+        Optional<MatchMaking> opponent = matchMakingRepository.findFirstByIdNotAndMatchedGameCodeIsNullOrderByJoinedAtAsc(userId);
         if (opponent.isPresent()) {
             return opponent.get();
         }

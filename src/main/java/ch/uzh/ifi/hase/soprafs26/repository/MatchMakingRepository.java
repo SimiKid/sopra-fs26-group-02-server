@@ -12,6 +12,6 @@ import java.util.Optional;
 @Repository("matchMakingRepository")
 public interface MatchMakingRepository extends JpaRepository<MatchMaking, Long> {
 
-    @Query("SELECT m FROM MatchMaking m WHERE m.id != :userId AND m.matchedGameId IS NULL ORDER BY m.joinedAt ASC")
-    Optional<MatchMaking> findFirstByIdNotAndMatchedGameIdIsNullOrderByJoinedAtAsc(@Param("Id") Long Id);
+    @Query("SELECT m FROM MatchMaking m WHERE m.id != :userId AND m.matchedGameCode IS NULL ORDER BY m.joinedAt ASC")
+    Optional<MatchMaking> findFirstByIdNotAndMatchedGameCodeIsNullOrderByJoinedAtAsc(@Param("userId") Long userId);
 }
