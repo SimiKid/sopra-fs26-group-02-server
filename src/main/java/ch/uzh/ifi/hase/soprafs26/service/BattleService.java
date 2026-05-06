@@ -123,7 +123,7 @@ public class BattleService {
 
         // a "round" = both players have attacked, so the battle can only end on even turn counts;
         // this guarantees the second player always gets a response swing before a loss is declared.
-        int totalTurns = battleRepository.countTurnsByGameId(session.getId());
+        int totalTurns = session.getCurrentTurnNumber();
         boolean isEvenTurn = totalTurns % 2 == 0;
         boolean battleEndedAfterRound = isEvenTurn && (attacker.getHp() <= 0 || defender.getHp() <= 0);
         User attackerUser = userRepository.findById(attacker.getUserId())
@@ -308,11 +308,16 @@ public class BattleService {
             session.getId()
         );
         LocalDateTime startTime;
-        if (session.getCurrentTurnNumber()==0){
-            startTime = session.getStartedAt();
+        Integer currentTurnForTimer = session.getCurrentTurnNumber();
+        if (currentTurnForTimer == null || currentTurnForTimer == 0) {
+            startTime = session.getStartedAt() != null ? session.getStartedAt() : LocalDateTime.now();
         } else {
-            Battle battle=battleRepository.findByGameIdAndTurnNumber(session.getId(), session.getCurrentTurnNumber());
-            startTime=battle.getTimeStamp();
+            Battle battle = battleRepository.findByGameIdAndTurnNumber(session.getId(), currentTurnForTimer);
+            if (battle == null || battle.getTimeStamp() == null) {
+                startTime = session.getStartedAt() != null ? session.getStartedAt() : LocalDateTime.now();
+            } else {
+                startTime = battle.getTimeStamp();
+            }
         }
 
         Instant executionTime = startTime.plusSeconds(30).atZone(ZoneId.systemDefault()).toInstant();

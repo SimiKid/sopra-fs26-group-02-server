@@ -44,8 +44,8 @@ public class GameSession implements Serializable {
     @Column(nullable = true)
     private LocalDateTime startedAt;
 
-    @Column(nullable = true)
-    private Integer currentTurnNumber;
+    @Column(nullable = false)
+    private Integer currentTurnNumber = 0;
 
     private Long winnerId;
 
