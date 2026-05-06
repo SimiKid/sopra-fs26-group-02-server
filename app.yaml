@@ -11,9 +11,6 @@ runtime_config:
 manual_scaling:
   instances: 1
 
-beta_settings:
-  cloud_sql_instances: CLOUD_SQL_INSTANCE_PLACEHOLDER
-
 env_variables:
   OPENWEATHER_API_KEY: ${OPENWEATHER_API_KEY}
   SPRING_PROFILES_ACTIVE: "prod"
