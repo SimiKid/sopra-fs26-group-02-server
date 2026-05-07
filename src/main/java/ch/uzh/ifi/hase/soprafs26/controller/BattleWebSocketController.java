@@ -6,7 +6,10 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Controller;
 
+import ch.uzh.ifi.hase.soprafs26.constant.EmoteKey;
+import ch.uzh.ifi.hase.soprafs26.rest.dto.EmoteMessageDTO;
 import ch.uzh.ifi.hase.soprafs26.service.BattleService;
+import ch.uzh.ifi.hase.soprafs26.service.EmoteService;
 
 /**
  * STOMP message handler for in-battle actions. Clients send an attack to
@@ -17,9 +20,11 @@ import ch.uzh.ifi.hase.soprafs26.service.BattleService;
 public class BattleWebSocketController {
 
     private final BattleService battleService;
+    private final EmoteService emoteService;
 
-    public BattleWebSocketController(BattleService battleService) {
+    public BattleWebSocketController(BattleService battleService, EmoteService emoteService) {
         this.battleService = battleService;
+        this.emoteService = emoteService;
     }
 
     @MessageMapping("/game/{gameCode}/attack")
@@ -29,5 +34,14 @@ public class BattleWebSocketController {
             @Payload String attackName) {
         
         battleService.resolveAttack(gameCode, token, attackName);
+    }
+
+    @MessageMapping("/game/{gameCode}/emote")
+    public void sendEmote(
+        @DestinationVariable ("gameCode") String gameCode,
+        @Header("Authorization") String token,
+        @Payload EmoteMessageDTO emoteMessage
+    ) {
+        emoteService.sendEmote(gameCode, token, emoteMessage.getEmoteKey());
     }
 }
