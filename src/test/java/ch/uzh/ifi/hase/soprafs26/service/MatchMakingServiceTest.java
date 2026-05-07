@@ -8,14 +8,12 @@ import ch.uzh.ifi.hase.soprafs26.repository.MatchMakingRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.http.HttpStatus;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -108,8 +106,8 @@ class MatchMakingServiceTest {
         verify(matchMakingRepository, atLeastOnce()).save(any(MatchMaking.class));
         verify(matchMakingRepository, times(1)).delete(myEntry);
         verify(matchMakingRepository, times(1)).delete(opponentEntry);
-        verify(simpleMessagingTemplate, times(1)).convertAndSend("/topic/match/" + userId, gameSession.getId());
-        verify(simpleMessagingTemplate, times(1)).convertAndSend("/topic/match/" + opponentId, gameSession.getId());
+        verify(simpleMessagingTemplate, times(1)).convertAndSend("/topic/match/" + userId, gameSession.getGameCode());
+        verify(simpleMessagingTemplate, times(1)).convertAndSend("/topic/match/" + opponentId, gameSession.getGameCode());
         assertThat(myEntry.getMatchedGameCode()).isEqualTo(gameSession.getGameCode());
         assertThat(opponentEntry.getMatchedGameCode()).isEqualTo(gameSession.getGameCode());
     }
