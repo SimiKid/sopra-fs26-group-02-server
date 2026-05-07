@@ -115,6 +115,9 @@ public class GameSessionService {
 					}
 					user2.setCurrentGameSessionId(saved.getId());
 					userRepository.save(user2);
+					saved.setGameStatus(GameStatus.CONFIGURING);
+					gameSessionRepository.save(saved);
+
 				}
 
 				User user = userRepository.findById(saved.getPlayer1Id())

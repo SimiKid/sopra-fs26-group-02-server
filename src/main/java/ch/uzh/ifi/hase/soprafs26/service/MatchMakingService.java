@@ -46,8 +46,8 @@ public class MatchMakingService {
             matchMakingRepository.save(myEntry);
             matchMakingRepository.save(opponent);
 
-            messagingTemplate.convertAndSend("/topic/match/" + userId, gameSession.getId());
-            messagingTemplate.convertAndSend("/topic/match/" + opponent.getId(), gameSession.getId());
+            messagingTemplate.convertAndSend("/topic/match/" + userId, gameSession.getGameCode());
+            messagingTemplate.convertAndSend("/topic/match/" + opponent.getId(), gameSession.getGameCode());
 
             matchMakingRepository.delete(myEntry);
             matchMakingRepository.delete(opponent);
