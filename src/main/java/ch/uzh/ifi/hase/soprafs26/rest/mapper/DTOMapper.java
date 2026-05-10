@@ -16,7 +16,7 @@ import ch.uzh.ifi.hase.soprafs26.rest.dto.GameHistoryEntryDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.GameSessionGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.PlayerGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.LeaderboardGetDTO;
-
+import java.util.List;
 
 /**
  * DTOMapper
@@ -75,6 +75,8 @@ public interface DTOMapper {
 	@Mapping(source = "losses", target = "losses")
 	@Mapping(source = "winRate", target = "winRate")
 	LeaderboardGetDTO convertEntityToLeaderboardGetDTO(User user);
+
+	List<LeaderboardGetDTO> convertEntityListToLeaderboardGetDTOList(List<User> users);
 	
 	@Mapping(source = "winnerUserId", target = "winnerUserId")
 	@Mapping(source = "loserUserId", target = "loserUserId")

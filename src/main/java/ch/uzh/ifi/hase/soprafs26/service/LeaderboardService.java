@@ -20,32 +20,22 @@ public class LeaderboardService {
         this.userRepository = userRepository;
     }
 
-    public List<LeaderboardGetDTO> getLeaderboard() {
+    public List<User> getLeaderboard() {
 		List<User> users = userRepository.findTop50ByTotalGamesGreaterThanOrderByWinsDescTotalGamesAscUsernameAsc(0);
-		List<LeaderboardGetDTO> leaderboard = new ArrayList<>();
+		List<User> leaderboard = new ArrayList<>();
 		for (User user : users) {
-			leaderboard.add(buildLeaderboard(user));
+			leaderboard.add(user);
 		}
 		return leaderboard;
 	}
 
-    public List<LeaderboardGetDTO> getLeaderboard5() {
+    public List<User> getLeaderboard5() {
 		List<User> users = userRepository.findTop5ByTotalGamesGreaterThanOrderByWinsDescTotalGamesAscUsernameAsc(0);
-		List<LeaderboardGetDTO> leaderboard = new ArrayList<>();
+		List<User> leaderboard = new ArrayList<>();
 		for (User user : users) {
-			leaderboard.add(buildLeaderboard(user));
+			leaderboard.add(user);
 		}
 		return leaderboard;
 	}
 
-	private LeaderboardGetDTO buildLeaderboard(User user) {
-		LeaderboardGetDTO dto = DTOMapper.INSTANCE.convertEntityToLeaderboardGetDTO(user);
-        dto.setUsername(user.getUsername());
-        dto.setTotalGames(user.getTotalGames());
-        dto.setWins(user.getWins());
-        dto.setLosses(user.getLosses());
-        dto.setWinRate(user.getWinRate());
-		dto.setUserId(user.getId());
-		return dto;
-	}
 }
