@@ -40,4 +40,12 @@ public class GlobalExceptionAdvice extends ResponseEntityExceptionHandler {
 		log.error("Default Exception Handler -> caught:", ex);
 		return new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage(), ex);
 	}
+
+	// Catch-all so unexpected exceptions (DataAccessException, MessagingException, NPE, ...)
+	// don't bypass our advice and produce a stack-trace-less 500.
+	@ExceptionHandler(Exception.class)
+	public ResponseEntity<Object> handleUncaughtException(Exception ex, WebRequest request) {
+		log.error("Unhandled exception on request {}", request.getDescription(false), ex);
+		return new ResponseEntity<>(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+	}
 }

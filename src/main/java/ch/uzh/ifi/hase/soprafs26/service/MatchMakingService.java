@@ -1,5 +1,7 @@
 package ch.uzh.ifi.hase.soprafs26.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,6 +14,7 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 import ch.uzh.ifi.hase.soprafs26.entity.GameSession;
 import ch.uzh.ifi.hase.soprafs26.repository.GameSessionRepository;
+import org.springframework.messaging.MessagingException;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import ch.uzh.ifi.hase.soprafs26.service.GameSessionService;
@@ -20,6 +23,8 @@ import ch.uzh.ifi.hase.soprafs26.service.GameSessionService;
 @Service
 @Transactional
 public class MatchMakingService {
+
+    private static final Logger log = LoggerFactory.getLogger(MatchMakingService.class);
 
     private final MatchMakingRepository matchMakingRepository;
     private final UserRepository userRepository;
@@ -46,8 +51,8 @@ public class MatchMakingService {
             matchMakingRepository.save(myEntry);
             matchMakingRepository.save(opponent);
 
-            messagingTemplate.convertAndSend("/topic/match/" + userId, gameSession.getGameCode());
-            messagingTemplate.convertAndSend("/topic/match/" + opponent.getId(), gameSession.getGameCode());
+            notifyMatched(userId, gameSession.getGameCode());
+            notifyMatched(opponent.getId(), gameSession.getGameCode());
 
             matchMakingRepository.delete(myEntry);
             matchMakingRepository.delete(opponent);
@@ -78,6 +83,15 @@ public class MatchMakingService {
             return opponent.get();
         }
         return null;
+    }
+
+    private void notifyMatched(Long userId, String gameCode) {
+        try {
+            messagingTemplate.convertAndSend("/topic/match/" + userId, gameCode);
+        }
+        catch (MessagingException ex) {
+            log.warn("Failed to notify user {} of match {} over WebSocket: {}", userId, gameCode, ex.getMessage());
+        }
     }
 
     private GameSession createGameSession(Long userId1, Long userId2) {
