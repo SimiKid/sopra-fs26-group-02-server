@@ -25,6 +25,8 @@ public class BattleStateDTO {
     private String player2Username;
     private String player1WizardClass;
     private String player2WizardClass;
+    private String player1DisabledSpell;
+    private String player2DisabledSpell;
 
     private String location;
     private RainCategory rain;
@@ -173,5 +175,21 @@ public class BattleStateDTO {
 
     public void setTimeStamp(LocalDateTime timeStamp) {
         this.timeStamp = timeStamp;
+    }
+
+    public String getPlayer1DisabledSpell(){
+        return player1DisabledSpell;
+    }
+
+    public void setPlayer1DisabledSpell(String player1DisabledSpell){
+        this.player1DisabledSpell = player1DisabledSpell;
+    }
+
+    public String getPlayer2DisabledSpell(){
+        return player2DisabledSpell;
+    }
+
+    public void setPlayer2DisabledSpell(String player2DisabledSpell){
+        this.player2DisabledSpell = player2DisabledSpell;
     }
 }

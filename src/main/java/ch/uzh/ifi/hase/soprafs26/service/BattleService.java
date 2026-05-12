@@ -94,6 +94,10 @@ public class BattleService {
 
         Player attacker = playerRepository.findByUserIdAndGameSessionId(session.getActivePlayerId(), session.getId());
 
+        if (attackName.equals(attacker.getLastUsedSpell())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You cannot use the same spell twice in a row.");
+        }
+
         Long defenderId;
         if (session.getPlayer1Id().equals(session.getActivePlayerId())) {
             defenderId = session.getPlayer2Id();
@@ -120,6 +124,9 @@ public class BattleService {
 
         defender.setHp(defender.getHp() - damage);
         playerRepository.save(defender);
+
+        attacker.setLastUsedSpell(attackName);
+        playerRepository.save(attacker);
 
         // a "round" = both players have attacked, so the battle can only end on even turn counts;
         // this guarantees the second player always gets a response swing before a loss is declared.
@@ -163,7 +170,7 @@ public class BattleService {
             session.setActivePlayerId(defenderId);
             
         }
-
+        
         gameSessionRepository.save(session);
         BattleStateDTO state = buildBattleState(session, damage, attackName);
         startTimer(gameCode, session);
@@ -255,6 +262,8 @@ public class BattleService {
         dto.setPlayer2Username(user2.getUsername());
         dto.setPlayer1WizardClass(player1.getWizardClass() != null ? player1.getWizardClass().name() : "Unknown");
         dto.setPlayer2WizardClass(player2.getWizardClass() != null ? player2.getWizardClass().name() : "Unknown");
+        dto.setPlayer1DisabledSpell(player1.getLastUsedSpell());
+        dto.setPlayer2DisabledSpell(player2.getLastUsedSpell());
 
         dto.setLocation(session.getArenaLocation() != null ? session.getArenaLocation().name() : "Unknown");
         dto.setRain(session.getRain());
@@ -327,8 +336,12 @@ public class BattleService {
             playerAttacks.add(attacker.getAttack1());
             playerAttacks.add(attacker.getAttack2());
             playerAttacks.add(attacker.getAttack3());
-
-            String attackName = playerAttacks.get((int) (Math.random() * 3));
+            
+            String lastUsed = attacker.getLastUsedSpell();
+            String attackName;
+            do {
+                attackName = playerAttacks.get((int) (Math.random() * 3));
+            } while (attackName.equals(lastUsed));
 
             // use the active player's own token so resolveAttack's auth check passes
             User activeUser = userRepository.findById(session.getActivePlayerId())
