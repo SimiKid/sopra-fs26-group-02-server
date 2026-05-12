@@ -69,6 +69,7 @@ public interface DTOMapper {
 	@BeanMapping(unmappedTargetPolicy = ReportingPolicy.IGNORE) // result + wizard classes are filled in by the service
 	GameHistoryEntryDTO convertEntityToGameHistoryEntryDTO(GameSession gameSession);
 
+	@Mapping(source = "id", target = "userId")
 	@Mapping(source = "username", target = "username")
 	@Mapping(source = "totalGames", target = "totalGames")
 	@Mapping(source = "wins", target = "wins")
