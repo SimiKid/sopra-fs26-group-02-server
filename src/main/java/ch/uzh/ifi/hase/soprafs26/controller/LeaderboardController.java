@@ -12,6 +12,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.web.bind.annotation.ResponseBody;
+import ch.uzh.ifi.hase.soprafs26.entity.User;
+import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
 
 @RestController
 @Tag(name = "Leaderboard", description = "Leaderboard endpoints")
@@ -32,7 +34,8 @@ public class LeaderboardController {
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     public List<LeaderboardGetDTO> getLeaderboard() {
-        return leaderboardService.getLeaderboard();
+        List<User> users = leaderboardService.getLeaderboard();
+        return DTOMapper.INSTANCE.convertEntityListToLeaderboardGetDTOList(users);
     }
 
     @GetMapping("/leaderboard5")
@@ -44,7 +47,8 @@ public class LeaderboardController {
         @ApiResponse(responseCode = "500", description = "Internal server error")
     })
     public List<LeaderboardGetDTO> getLeaderboard5() {
-        return leaderboardService.getLeaderboard5();
+        List<User> users = leaderboardService.getLeaderboard5();
+        return DTOMapper.INSTANCE.convertEntityListToLeaderboardGetDTOList(users);
     }
 }
 

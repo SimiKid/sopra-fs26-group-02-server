@@ -99,10 +99,9 @@ public class RematchService {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                 "One or both players have already joined another game.");
         }
-        user1.setCurrentGameSessionId(null);
-        user2.setCurrentGameSessionId(null);
-        userRepository.save(user1);
-        userRepository.save(user2);
+        
+        gameSessionService.nullifyGameSessionId(user1.getId());
+        gameSessionService.nullifyGameSessionId(user2.getId());
 
         GameSession newSession = new GameSession();
         newSession.setPlayer1Id(player1Id);

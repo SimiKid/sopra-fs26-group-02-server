@@ -3,7 +3,6 @@ package ch.uzh.ifi.hase.soprafs26.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -19,9 +18,7 @@ import ch.uzh.ifi.hase.soprafs26.repository.GameSessionRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.BattleRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.UserRepository;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.BattleResultGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.BattleStateDTO;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.WeatherGetDTO;
 import ch.uzh.ifi.hase.soprafs26.constant.Element;
 import ch.uzh.ifi.hase.soprafs26.constant.WeatherModifier;
 import ch.uzh.ifi.hase.soprafs26.constant.TemperatureCategory;
@@ -55,6 +52,7 @@ import java.util.Optional;
 public class BattleService {
     private final Logger log = LoggerFactory.getLogger(BattleService.class);
     private final GameSessionRepository gameSessionRepository;
+    private final GameSessionService gameSessionService;
     private final PlayerRepository playerRepository;
     private final AuthenticationService authenticationService;
     private final SimpMessagingTemplate messagingTemplate;
@@ -64,12 +62,14 @@ public class BattleService {
     private final TaskScheduler taskScheduler = new ConcurrentTaskScheduler(Executors.newScheduledThreadPool(2));
 
     public BattleService(GameSessionRepository gameSessionRepository,
+                         GameSessionService gameSessionService,
                          PlayerRepository playerRepository,
                          AuthenticationService authenticationService,
                          SimpMessagingTemplate messagingTemplate,
                          UserRepository userRepository,
                          BattleRepository battleRepository) {
         this.gameSessionRepository = gameSessionRepository;
+        this.gameSessionService = gameSessionService;
         this.playerRepository = playerRepository;
         this.authenticationService = authenticationService;
         this.messagingTemplate = messagingTemplate;
@@ -81,7 +81,7 @@ public class BattleService {
         User user = authenticationService.authenticateByToken(token);
         GameSession session = Optional.ofNullable(gameSessionRepository.findByGameCode(gameCode))
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found."));
-        
+        session.setCurrentTurnNumber(session.getCurrentTurnNumber() + 1);
         stopTimer(gameCode);
 
         if (session.getGameStatus() != GameStatus.BATTLE){
@@ -115,6 +115,7 @@ public class BattleService {
         battleLog.setCurrentAction(attack);
         battleLog.setDamageDealt(damage);
         battleLog.setTimeStamp(LocalDateTime.now());
+        battleLog.setTurnNumber(session.getCurrentTurnNumber());
         battleRepository.save(battleLog);
 
         defender.setHp(defender.getHp() - damage);
@@ -122,7 +123,8 @@ public class BattleService {
 
         // a "round" = both players have attacked, so the battle can only end on even turn counts;
         // this guarantees the second player always gets a response swing before a loss is declared.
-        boolean isEvenTurn = battleRepository.countTurnsByGameId(session.getId()) % 2 == 0;
+        int totalTurns = session.getCurrentTurnNumber();
+        boolean isEvenTurn = totalTurns % 2 == 0;
         boolean battleEndedAfterRound = isEvenTurn && (attacker.getHp() <= 0 || defender.getHp() <= 0);
         User attackerUser = userRepository.findById(attacker.getUserId())
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Attacker user not found."));
@@ -135,30 +137,28 @@ public class BattleService {
                 //set stats in user table
                 attackerUser.setWins(attackerUser.getWins() + 1);
                 attackerUser.setTotalGames(attackerUser.getTotalGames() + 1);
-                attackerUser.setWinRate(attackerUser.getWins() / attackerUser.getTotalGames());
+                attackerUser.setWinRate((float) attackerUser.getWins() / attackerUser.getTotalGames());
 
                 defenderUser.setLosses(defenderUser.getLosses() + 1);
                 defenderUser.setTotalGames(defenderUser.getTotalGames() + 1);
-                defenderUser.setWinRate(defenderUser.getWins() / defenderUser.getTotalGames());
+                defenderUser.setWinRate((float) defenderUser.getWins() / defenderUser.getTotalGames());
             } else if (defender.getHp() > attacker.getHp()) {
                 session.setWinnerId(defender.getUserId()); // Defender wins
                 //set stats in user table
                 defenderUser.setWins(defenderUser.getWins() + 1);
                 defenderUser.setTotalGames(defenderUser.getTotalGames() + 1);
-                defenderUser.setWinRate(defenderUser.getWins() / defenderUser.getTotalGames());
+                defenderUser.setWinRate((float) defenderUser.getWins() / defenderUser.getTotalGames());
 
                 attackerUser.setLosses(attackerUser.getLosses() + 1);
                 attackerUser.setTotalGames(attackerUser.getTotalGames() + 1);
-                attackerUser.setWinRate(attackerUser.getWins() / attackerUser.getTotalGames());
+                attackerUser.setWinRate((float) attackerUser.getWins() / attackerUser.getTotalGames());
             } else {
                 session.setWinnerId(null); // Draw
             }
             // Clear current game session for both players
             session.setGameStatus(GameStatus.FINISHED);
-            attackerUser.setCurrentGameSessionId(null);
-            userRepository.save(attackerUser);
-            defenderUser.setCurrentGameSessionId(null);
-            userRepository.save(defenderUser);
+            gameSessionService.nullifyGameSessionId(attackerUser.getId());
+            gameSessionService.nullifyGameSessionId(defenderUser.getId());
         } else {
             session.setActivePlayerId(defenderId);
             
@@ -166,7 +166,7 @@ public class BattleService {
 
         gameSessionRepository.save(session);
         BattleStateDTO state = buildBattleState(session, damage, attackName);
-        startTimer(gameCode, session, state);
+        startTimer(gameCode, session);
         broadcastAfterCommit(gameCode, state);
     }
 
@@ -301,14 +301,25 @@ public class BattleService {
     // three selected attacks fires automatically on their behalf so the
     // battle can't stall indefinitely. Any new startTimer call cancels the
     // previous one for the same gameCode.
-    public void startTimer(String gameCode, GameSession session, BattleStateDTO dto) {
+    public void startTimer(String gameCode, GameSession session) {
         stopTimer(gameCode);
         Player attacker = playerRepository.findByUserIdAndGameSessionId(
             session.getActivePlayerId(),
             session.getId()
         );
-        
-        LocalDateTime startTime = dto.getTimeStamp();
+        LocalDateTime startTime;
+        Integer currentTurnForTimer = session.getCurrentTurnNumber();
+        if (currentTurnForTimer == null || currentTurnForTimer == 0) {
+            startTime = session.getStartedAt() != null ? session.getStartedAt() : LocalDateTime.now();
+        } else {
+            Battle battle = battleRepository.findByGameIdAndTurnNumber(session.getId(), currentTurnForTimer);
+            if (battle == null || battle.getTimeStamp() == null) {
+                startTime = session.getStartedAt() != null ? session.getStartedAt() : LocalDateTime.now();
+            } else {
+                startTime = battle.getTimeStamp();
+            }
+        }
+
         Instant executionTime = startTime.plusSeconds(30).atZone(ZoneId.systemDefault()).toInstant();
         
         ScheduledFuture<?> task = taskScheduler.schedule(() -> {

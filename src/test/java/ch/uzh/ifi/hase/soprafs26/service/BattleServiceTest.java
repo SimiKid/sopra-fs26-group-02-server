@@ -29,7 +29,6 @@ import ch.uzh.ifi.hase.soprafs26.repository.BattleRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.GameSessionRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.PlayerRepository;
 import ch.uzh.ifi.hase.soprafs26.repository.UserRepository;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.BattleResultGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.BattleStateDTO;
 
 public class BattleServiceTest {
@@ -51,6 +50,9 @@ public class BattleServiceTest {
 
     @Mock
     private BattleRepository battleRepository;
+
+    @Mock
+    private GameSessionService gameSessionService;
 
     @InjectMocks
     private BattleService battleService;
@@ -194,8 +196,8 @@ public class BattleServiceTest {
 
         assertEquals(GameStatus.FINISHED, session.getGameStatus());
         assertEquals(1L, session.getWinnerId());
-        assertNull(attackerUser.getCurrentGameSessionId());
-        assertNull(defenderUser.getCurrentGameSessionId());
+        verify(gameSessionService).nullifyGameSessionId(1L);
+        verify(gameSessionService).nullifyGameSessionId(2L);
     }
 
     @Test
@@ -292,6 +294,7 @@ public class BattleServiceTest {
         session.setRain(rain);
         session.setActivePlayerId(1L);
         session.setWinnerId(null);
+        session.setCurrentTurnNumber(turnsAfterSave - 1);
         given(battleRepository.countTurnsByGameId(1L)).willReturn(turnsAfterSave);
     }
 

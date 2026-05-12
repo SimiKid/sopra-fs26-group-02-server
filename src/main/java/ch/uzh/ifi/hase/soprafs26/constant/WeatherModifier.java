@@ -18,7 +18,7 @@ public class WeatherModifier {
             RainCategory.RAINING, 1.2,
             RainCategory.CLEAR, 0.8
         ),
-        Element.LIGHTNING, Map.of(
+        Element.STORM, Map.of(
             TemperatureCategory.COLD, 1.0,
             TemperatureCategory.NEUTRAL, 1.0,
             TemperatureCategory.HOT, 1.0,

@@ -41,6 +41,12 @@ public class GameSession implements Serializable {
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(nullable = true)
+    private LocalDateTime startedAt;
+
+    @Column(nullable = false)
+    private Integer currentTurnNumber = 0;
+
     private Long winnerId;
 
     private boolean player1WantsRematch = false;
@@ -140,5 +146,21 @@ public class GameSession implements Serializable {
 
         public void setRematchGameCode(String rematchGameCode){
             this.rematchGameCode = rematchGameCode;
+        }
+
+        public LocalDateTime getStartedAt(){
+            return startedAt;
+        }
+
+        public void setStartedAt(LocalDateTime startedAt){
+            this.startedAt = startedAt;
+        }
+
+        public Integer getCurrentTurnNumber(){
+            return currentTurnNumber;
+        }
+
+        public void setCurrentTurnNumber(Integer currentTurnNumber){
+            this.currentTurnNumber = currentTurnNumber;
         }
 }

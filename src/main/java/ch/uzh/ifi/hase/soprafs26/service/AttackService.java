@@ -17,7 +17,7 @@ import ch.uzh.ifi.hase.soprafs26.rest.dto.BattleStateDTO;
 
 import java.util.List;
 import java.util.Optional;
-
+import java.time.LocalDateTime;
 /**
  * Handles per-player attack selection during the CONFIGURING phase.
  * Once both players have selected their 3 attacks and flipped their ready
@@ -127,11 +127,12 @@ public class AttackService {
             session.setActivePlayerId(
                 Math.random() < 0.5 ? session.getPlayer1Id() : session.getPlayer2Id()
             );
-
+            session.setCurrentTurnNumber(0);
+            session.setStartedAt(LocalDateTime.now());
             gameSessionRepository.save(session);
 
             BattleStateDTO initialState = battleService.buildBattleState(session, 0, null);
-            battleService.startTimer(gameCode, session, initialState);
+            battleService.startTimer(gameCode, session);
             messagingTemplate.convertAndSend("/topic/game/" + gameCode, initialState);
         }
         return savedPlayer;

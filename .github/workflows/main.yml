@@ -47,6 +47,7 @@ jobs:
         run: |
           sed -i "s|OPENWEATHER_API_KEY: .*|OPENWEATHER_API_KEY: '${{ secrets.OPENWEATHER_API_KEY }}'|" app.yaml
           sed -i "s|CLOUD_SQL_INSTANCE_PLACEHOLDER|${{ secrets.CLOUD_SQL_INSTANCE }}|" app.yaml
+          sed -i "s|DB_URL_PLACEHOLDER|${{ secrets.DB_URL }}|" app.yaml
           sed -i "s|DB_USER_PLACEHOLDER|${{ secrets.DB_USER }}|" app.yaml
           sed -i "s|DB_PASSWORD_PLACEHOLDER|${{ secrets.DB_PASSWORD }}|" app.yaml
 

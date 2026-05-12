@@ -16,7 +16,7 @@ import ch.uzh.ifi.hase.soprafs26.rest.dto.GameHistoryEntryDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.GameSessionGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.PlayerGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.LeaderboardGetDTO;
-
+import java.util.List;
 
 /**
  * DTOMapper
@@ -69,12 +69,15 @@ public interface DTOMapper {
 	@BeanMapping(unmappedTargetPolicy = ReportingPolicy.IGNORE) // result + wizard classes are filled in by the service
 	GameHistoryEntryDTO convertEntityToGameHistoryEntryDTO(GameSession gameSession);
 
+	@Mapping(source = "id", target = "userId")
 	@Mapping(source = "username", target = "username")
 	@Mapping(source = "totalGames", target = "totalGames")
 	@Mapping(source = "wins", target = "wins")
 	@Mapping(source = "losses", target = "losses")
 	@Mapping(source = "winRate", target = "winRate")
 	LeaderboardGetDTO convertEntityToLeaderboardGetDTO(User user);
+
+	List<LeaderboardGetDTO> convertEntityListToLeaderboardGetDTOList(List<User> users);
 	
 	@Mapping(source = "winnerUserId", target = "winnerUserId")
 	@Mapping(source = "loserUserId", target = "loserUserId")

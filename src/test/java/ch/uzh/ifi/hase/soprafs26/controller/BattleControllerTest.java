@@ -19,9 +19,7 @@ import ch.uzh.ifi.hase.soprafs26.interceptor.AuthInterceptor;
 import ch.uzh.ifi.hase.soprafs26.constant.RainCategory;
 import ch.uzh.ifi.hase.soprafs26.constant.TemperatureCategory;
 import ch.uzh.ifi.hase.soprafs26.entity.BattleResult;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.BattleResultGetDTO;
 import ch.uzh.ifi.hase.soprafs26.rest.dto.BattleStateDTO;
-import ch.uzh.ifi.hase.soprafs26.rest.dto.WeatherGetDTO;
 import ch.uzh.ifi.hase.soprafs26.service.BattleService;
 
 @WebMvcTest(BattleController.class)
