@@ -10,6 +10,7 @@ import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs26.service.GameSessionService;
 import ch.uzh.ifi.hase.soprafs26.service.AuthenticationService;
 
+import java.time.LocalDateTime;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -69,6 +70,19 @@ public class GameSessionController {
         GameSession gameSession = gameSessionService.getByGameCode(gameCode);
         return DTOMapper.INSTANCE.convertEntityToGameSessionGetDTO(gameSession);
     }
+
+    @GetMapping("/{gameCode}/expiration-time")
+    @ResponseStatus(HttpStatus.OK)
+    @ResponseBody
+    @Operation(summary = "Get the expiration time of a game session", description = "Retrieves the expiration time of a game session")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Expiration time returned"),
+        @ApiResponse(responseCode = "404", description = "Game session not found")
+    })
+    public LocalDateTime getExpirationTime(@Parameter(description = "The unique game code") @PathVariable("gameCode") String gameCode) {
+        return gameSessionService.getExpirationTime(gameCode);
+    }
+
 
     @PostMapping("/games/{gameCode}/join")
     @ResponseStatus(HttpStatus.OK)

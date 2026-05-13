@@ -115,6 +115,7 @@ public class GameSessionService {
 					user2.setCurrentGameSessionId(saved.getId());
 					userRepository.save(user2);
 					saved.setGameStatus(GameStatus.CONFIGURING);
+					saved.setConnectedAt(LocalDateTime.now());
 					gameSessionRepository.save(saved);
 
 				}
@@ -169,6 +170,7 @@ public class GameSessionService {
 
 		gameSession.setPlayer2Id(player2Id);
 		gameSession.setGameStatus(GameStatus.CONFIGURING);
+		gameSession.setConnectedAt(LocalDateTime.now());
 
 		gameSession = gameSessionRepository.save(gameSession);
 		gameSessionRepository.flush();
@@ -209,23 +211,40 @@ public class GameSessionService {
 		gameSessionRepository.delete(gameSession);
 	}
 
+
+	public LocalDateTime getExpirationTime(String gameCode) {
+		GameSession gameSession = getByGameCode(gameCode);
+		return gameSession.getConnectedAt().plusMinutes(3);
+	}
+	
+
 	// This method schedules a cleanup of game sessions that are still waiting for a second player after 10 minutes.
 	// It finds all game sessions where player2Id is null and createdAt is more than 10 minutes ago, and deletes them from the repository.
-	@Scheduled(fixedRate = 60000) // runs every minute
+	@Scheduled(fixedRate = 1000) // runs every second
 	public void cleanupExpiredGameSessions() {
 		LocalDateTime cutoff = LocalDateTime.now().minusMinutes(10);
 		List<GameSession> expiredSessions = gameSessionRepository.findByPlayer2IdIsNullAndCreatedAtBefore(cutoff);
+		expiredSessions.addAll(gameSessionRepository.findByConnectedAtBeforeAndStartedAtIsNull(LocalDateTime.now().minusMinutes(3)));
+
 		for (GameSession session : expiredSessions) {
 			log.info("Cleaning up expired game session with code {}", session.getGameCode());
 			
 				userRepository.findById(session.getPlayer1Id()).ifPresent(user -> {
 				nullifyGameSessionId(user.getId());
+				userRepository.findById(session.getPlayer2Id()).ifPresent(user2 -> {
+					nullifyGameSessionId(user2.getId());
+				});
+				playerRepository.findByGameSessionId(session.getId()).forEach(player -> {
+					playerRepository.delete(player);
+				});
+				
 			});
 			
 			gameSessionRepository.delete(session);
 		}
 		
 	}
+
 
 	public Player saveWizardClass(String gameCode, String token, String wizardClassName) {
 		GameSession gameSession = getByGameCode(gameCode);
