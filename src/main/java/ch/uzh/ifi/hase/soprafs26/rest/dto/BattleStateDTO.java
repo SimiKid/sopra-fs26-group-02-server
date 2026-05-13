@@ -181,15 +181,15 @@ public class BattleStateDTO {
         return player1DisabledSpell;
     }
 
-    public void setPlayer1DisabledSpell(String player1DisabledSpell){
+    public void setPlayer1DisabledSpell(String player1DisabledSpell) {
         this.player1DisabledSpell = player1DisabledSpell;
     }
 
-    public String getPlayer2DisabledSpell(){
+    public String getPlayer2DisabledSpell() {
         return player2DisabledSpell;
     }
 
-    public void setPlayer2DisabledSpell(String player2DisabledSpell){
+    public void setPlayer2DisabledSpell(String player2DisabledSpell) {
         this.player2DisabledSpell = player2DisabledSpell;
     }
 }

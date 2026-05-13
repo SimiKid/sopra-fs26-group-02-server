@@ -40,6 +40,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import java.util.Optional;
+import java.util.Objects;
 /**
  * Core battle orchestrator. Resolves incoming attacks, computes damage
  * (attack base × wizard class multiplier × weather modifier), logs each
@@ -94,7 +95,11 @@ public class BattleService {
 
         Player attacker = playerRepository.findByUserIdAndGameSessionId(session.getActivePlayerId(), session.getId());
 
-        if (attackName.equals(attacker.getLastUsedSpell())) {
+        if (attackName == null || attackName.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Attack name cannot be empty.");
+        }
+
+        if (Objects.equals(attackName, attacker.getLastUsedSpell())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "You cannot use the same spell twice in a row.");
         }
 
@@ -338,10 +343,11 @@ public class BattleService {
             playerAttacks.add(attacker.getAttack3());
             
             String lastUsed = attacker.getLastUsedSpell();
-            String attackName;
-            do {
-                attackName = playerAttacks.get((int) (Math.random() * 3));
-            } while (attackName.equals(lastUsed));
+            int randomSpellIndex = (int) (Math.random() * 3);
+            String attackName = playerAttacks.get(randomSpellIndex);
+            if (attackName.equals(lastUsed)){
+                attackName = playerAttacks.get((randomSpellIndex+1) % playerAttacks.size());
+            }
 
             // use the active player's own token so resolveAttack's auth check passes
             User activeUser = userRepository.findById(session.getActivePlayerId())
