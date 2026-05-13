@@ -30,6 +30,9 @@ public class Player implements Serializable {
     @Column(nullable = false)
     private Long gameSessionId;
 
+    @Column
+    private String lastUsedSpell;
+
     @Enumerated(EnumType.STRING)
     private WizardClass wizardClass;
 
@@ -134,6 +137,11 @@ public class Player implements Serializable {
         this.ready = ready;
     }
 
-    
-    
+    public String getLastUsedSpell() {
+        return lastUsedSpell;
+    }
+
+    public void setLastUsedSpell(String lastUsedSpell) {
+        this.lastUsedSpell = lastUsedSpell;
+    }    
 }
