@@ -328,4 +328,45 @@ public class BattleServiceTest {
         p.setAttack3("TORNADO");
         return p;
     }
+
+    @Test
+    void resolveAttack_sameSpellTwiceInRow_throws400() {
+        primeBattle(TemperatureCategory.NEUTRAL, RainCategory.CLEAR, 1);
+        User attackerUser = user(1L, "token-p1");
+        User defenderUser = user(2L, "token-p2");
+        Player attacker = player(1L, 100, WizardClass.BALANCEDWIZARD);
+        attacker.setLastUsedSpell("FIREBALL");
+        Player defender = player(2L, 100, WizardClass.BALANCEDWIZARD);
+        wireUsersAndPlayers(attackerUser, defenderUser, attacker, defender);
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+            () -> battleService.resolveAttack("ABC123", "token-p1", "FIREBALL"));
+
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+    }
+
+    @Test
+    void buildBattleState_exposesDisabledSpellsForBothPlayers() {
+        Player p1 = new Player();
+        p1.setUserId(1L);
+        p1.setHp(100);
+        p1.setMaxHp(100);
+        p1.setLastUsedSpell("FIREBALL");
+
+        Player p2 = new Player();
+        p2.setUserId(2L);
+        p2.setHp(100);
+        p2.setMaxHp(100);
+        p2.setLastUsedSpell("TORNADO");
+
+        given(playerRepository.findByUserIdAndGameSessionId(1L, 1L)).willReturn(p1);
+        given(playerRepository.findByUserIdAndGameSessionId(2L, 1L)).willReturn(p2);
+        given(userRepository.findById(1L)).willReturn(Optional.of(user(1L, "t1")));
+        given(userRepository.findById(2L)).willReturn(Optional.of(user(2L, "t2")));
+
+        BattleStateDTO dto = battleService.buildBattleState(session, 0, null);
+
+        assertEquals("FIREBALL", dto.getPlayer1DisabledSpell());
+        assertEquals("TORNADO", dto.getPlayer2DisabledSpell());
+    }
 }
