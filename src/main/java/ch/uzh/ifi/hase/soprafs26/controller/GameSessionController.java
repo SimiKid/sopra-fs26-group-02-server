@@ -79,8 +79,8 @@ public class GameSessionController {
         @ApiResponse(responseCode = "200", description = "Expiration time returned"),
         @ApiResponse(responseCode = "404", description = "Game session not found")
     })
-    public LocalDateTime getExpirationTime(@Parameter(description = "The unique game code") @PathVariable("gameCode") String gameCode) {
-        return gameSessionService.getExpirationTime(gameCode);
+    public long getRemainingMS(@Parameter(description = "The unique game code") @PathVariable("gameCode") String gameCode) {
+        return gameSessionService.getRemainingMS(gameCode);
     }
 
 

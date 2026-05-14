@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import java.util.Optional;
 import java.util.Random;
+import java.time.Duration;
 
 import ch.uzh.ifi.hase.soprafs26.entity.GameSession;
 import ch.uzh.ifi.hase.soprafs26.repository.GameSessionRepository;
@@ -212,9 +213,10 @@ public class GameSessionService {
 	}
 
 
-	public LocalDateTime getExpirationTime(String gameCode) {
+	public long getRemainingMS(String gameCode) {
 		GameSession gameSession = getByGameCode(gameCode);
-		return gameSession.getConnectedAt().plusMinutes(3);
+		long remainingMS = Duration.between(LocalDateTime.now(), gameSession.getConnectedAt().plusMinutes(1).plusSeconds(30)).toMillis();
+		return Math.max(0, remainingMS);
 	}
 	
 
@@ -224,7 +226,7 @@ public class GameSessionService {
 	public void cleanupExpiredGameSessions() {
 		LocalDateTime cutoff = LocalDateTime.now().minusMinutes(10);
 		List<GameSession> expiredSessions = gameSessionRepository.findByPlayer2IdIsNullAndCreatedAtBefore(cutoff);
-		expiredSessions.addAll(gameSessionRepository.findByConnectedAtBeforeAndStartedAtIsNull(LocalDateTime.now().minusMinutes(3)));
+		expiredSessions.addAll(gameSessionRepository.findByConnectedAtBeforeAndStartedAtIsNull(LocalDateTime.now().minusMinutes(1).minusSeconds(30)));
 
 		for (GameSession session : expiredSessions) {
 			log.info("Cleaning up expired game session with code {}", session.getGameCode());
