@@ -310,4 +310,25 @@ public class GameSessionService {
 	public long getBattleCount() {
     	return gameSessionRepository.countStartedBattles();
 	}
+
+	public void leaveGameSession(String gameCode, String token) {
+		GameSession session = getByGameCode(gameCode);		
+		User user=userRepository.findByToken(token);
+		Long userId = user.getId();
+		if (!userId.equals(session.getPlayer1Id()) && !userId.equals(session.getPlayer2Id())) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not part of this game session.");
+		}
+		userRepository.findById(session.getPlayer1Id()).ifPresent(user1 -> {
+			nullifyGameSessionId(user1.getId());
+		});
+		userRepository.findById(session.getPlayer2Id()).ifPresent(user2 -> {
+				nullifyGameSessionId(user2.getId());
+			});
+		playerRepository.findByGameSessionId(session.getId()).forEach(player -> {
+				playerRepository.delete(player);
+			});
+
+		gameSessionRepository.delete(session);
+		simpleMessagingTemplate.convertAndSend("/topic/game/" + gameCode + "/player-left", "PLAYER_LEFT");
+	}
 }

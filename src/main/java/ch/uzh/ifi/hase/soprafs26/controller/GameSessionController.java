@@ -124,5 +124,20 @@ public class GameSessionController {
     public long getBattleCount() {
         return gameSessionService.getBattleCount();
     }
+
+    @PostMapping("/games/{gameCode}/leave")
+    @ResponseStatus(HttpStatus.OK)
+    @Operation(summary = "Leave a game session", description = "Leaves the game session with the given game code")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully left the game session"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing token"),
+        @ApiResponse(responseCode = "404", description = "Game session not found")
+    })
+    public void leaveGameSession(
+        @Parameter(description = "The unique game code") @PathVariable("gameCode") String gameCode, @RequestHeader("Authorization") String token) {
+        gameSessionService.leaveGameSession(gameCode, token);
+    }
+
+
 }
 	
