@@ -312,7 +312,10 @@ public class GameSessionService {
 	}
 
 	public void leaveGameSession(String gameCode, String token) {
-		GameSession session = getByGameCode(gameCode);		
+		GameSession session = getByGameCode(gameCode);
+		if (!session.getGameStatus().equals(GameStatus.CONFIGURING)) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Game is not in configuration phase.");
+		}
 		User user=userRepository.findByToken(token);
 		Long userId = user.getId();
 		if (!userId.equals(session.getPlayer1Id()) && !userId.equals(session.getPlayer2Id())) {
