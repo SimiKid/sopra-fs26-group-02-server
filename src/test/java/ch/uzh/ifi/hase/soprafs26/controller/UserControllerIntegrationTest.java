@@ -57,4 +57,13 @@ public class UserControllerIntegrationTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.detail", is("Username must be at most 20 characters")));
     }
+
+    @Test
+    public void register_passwordTooLong_returnsBadRequestWithMessage() throws Exception {
+        mockMvc().perform(post("/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"username\":\"validuser\",\"password\":\"" + "a".repeat(51) + "\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail", is("Password must be at most 50 characters")));
+    }
 }

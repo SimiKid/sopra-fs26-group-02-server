@@ -57,6 +57,9 @@ public class UserService {
 		if (newUser.getPassword() == null || newUser.getPassword().isBlank()) {
 			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password is required");
 		}
+		if (newUser.getPassword().length() > 50) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password must be at most 50 characters");
+		}
 		checkIfUserExists(newUser);
 		// saves the given entity but data is only persisted in the database once
 		// flush() is called

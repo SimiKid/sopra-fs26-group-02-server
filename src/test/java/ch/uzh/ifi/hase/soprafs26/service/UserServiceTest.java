@@ -144,6 +144,27 @@ public class UserServiceTest {
 	}
 
 	@Test
+	public void createUser_passwordTooLong_throwsBadRequest() {
+		testUser.setPassword("a".repeat(51));
+
+		ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+			() -> userService.createUser(testUser));
+
+		assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+		assertEquals("Password must be at most 50 characters", ex.getReason());
+	}
+
+	@Test
+	public void createUser_fiftyCharPassword_success() {
+		testUser.setPassword("a".repeat(50));
+
+		User createdUser = userService.createUser(testUser);
+
+		Mockito.verify(userRepository, Mockito.times(1)).save(Mockito.any());
+		assertNotNull(createdUser.getToken());
+	}
+
+	@Test
 	public void getGameHistory_emptyHistory_returnsEmptyList() {
 		Mockito.when(gameSessionRepository.findFinishedGamesForUser(1L))
 			.thenReturn(Collections.emptyList());
