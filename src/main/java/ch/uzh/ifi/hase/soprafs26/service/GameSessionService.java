@@ -334,4 +334,17 @@ public class GameSessionService {
 		gameSessionRepository.delete(session);
 		simpleMessagingTemplate.convertAndSend("/topic/game/" + gameCode + "/player-left", "PLAYER_LEFT");
 	}
+
+	public boolean getPlayerStatusandgiveMessage(String gameCode, String token) {
+		GameSession session = getByGameCode(gameCode);
+		User user=userRepository.findByToken(token);
+		Long userId = user.getId();
+		Long gameSessionId = session.getId();
+		Player player = playerRepository.findByUserIdAndGameSessionId(userId, gameSessionId);
+		if (player == null) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not part of this game session.");
+		}
+		simpleMessagingTemplate.convertAndSend("/topic/game/" + gameCode + "/player-status", "TIME_EXPIRED");
+		return player.isReady();
+	}
 }

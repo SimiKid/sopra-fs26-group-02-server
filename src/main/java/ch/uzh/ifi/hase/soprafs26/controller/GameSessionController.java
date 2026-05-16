@@ -139,5 +139,16 @@ public class GameSessionController {
     }
 
 
+    @GetMapping("/games/{gameCode}/status")
+    @ResponseStatus(HttpStatus.OK)
+    @Operation(summary = "Get the status of a player in a game session", description = "Retrieves the status of a player in a game session")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Status returned"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing token"),
+        @ApiResponse(responseCode = "404", description = "Game session not found")
+    })
+    public boolean getGameStatusandgiveMessage(@Parameter(description = "The unique game code") @PathVariable("gameCode") String gameCode, @RequestHeader("Authorization") String token) {
+        return gameSessionService.getPlayerStatusandgiveMessage(gameCode, token);
+    }
 }
 	
