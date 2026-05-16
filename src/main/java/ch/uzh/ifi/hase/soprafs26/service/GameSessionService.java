@@ -313,9 +313,19 @@ public class GameSessionService {
 
 	public void leaveGameSession(String gameCode, String token) {
 		GameSession session = getByGameCode(gameCode);
-		if (!session.getGameStatus().equals(GameStatus.CONFIGURING)) {
-			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Game is not in configuration phase.");
+		if (session.getGameStatus().equals(GameStatus.CONFIGURING)) {
+			leaveinConfiguring(gameCode, token);
 		}
+		else if (session.getGameStatus().equals(GameStatus.BATTLE)) {
+			leaveinBattle(gameCode, token);
+		}
+		else {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Game is not in configuration or battle phase.");
+		}
+	}
+
+	private void leaveinConfiguring(String gameCode, String token) {
+		GameSession session = getByGameCode(gameCode);
 		User user=userRepository.findByToken(token);
 		Long userId = user.getId();
 		if (!userId.equals(session.getPlayer1Id()) && !userId.equals(session.getPlayer2Id())) {
@@ -333,6 +343,43 @@ public class GameSessionService {
 
 		gameSessionRepository.delete(session);
 		simpleMessagingTemplate.convertAndSend("/topic/game/" + gameCode + "/player-left", "PLAYER_LEFT");
+	}
+
+	private void leaveinBattle(String gameCode, String token) {
+		GameSession session = getByGameCode(gameCode);
+		User user1 = userRepository.findById(session.getPlayer1Id())
+			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+		User user2 = userRepository.findById(session.getPlayer2Id())
+			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+		User loserUser=null;
+		User winnerUser=null;
+		if (user1.getToken().equals(token)) {
+			loserUser=user1;
+			winnerUser=user2;
+		}
+		else if (user2.getToken().equals(token)) {
+			loserUser=user2;
+			winnerUser=user1;
+		}
+		else {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not part of this game session.");
+		}
+		session.setWinnerId(winnerUser.getId());
+		//set stats in user table loser
+		loserUser.setTotalGames(loserUser.getTotalGames() + 1);
+		loserUser.setLosses(loserUser.getLosses() + 1);
+		loserUser.setWinRate((float) loserUser.getWins() / loserUser.getTotalGames());
+		//set stats in user table winner
+		winnerUser.setWins(winnerUser.getWins() + 1);
+		winnerUser.setTotalGames(winnerUser.getTotalGames() + 1);
+		winnerUser.setWinRate((float) winnerUser.getWins() / winnerUser.getTotalGames());
+		userRepository.save(loserUser);
+		userRepository.save(winnerUser);
+		session.setGameStatus(GameStatus.FINISHED);
+		nullifyGameSessionId(loserUser.getId());
+		nullifyGameSessionId(winnerUser.getId());
+		//websocket message
+		simpleMessagingTemplate.convertAndSend("/topic/game/" + gameCode + "/battle-ended", "PLAYER_LEFT_IN_BATTLE");
 	}
 
 	public boolean getPlayerStatusandgiveMessage(String gameCode, String token) {
