@@ -12,6 +12,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.Optional;
 import java.util.Random;
 import java.time.Duration;
+import java.util.ArrayList;
 
 import ch.uzh.ifi.hase.soprafs26.entity.GameSession;
 import ch.uzh.ifi.hase.soprafs26.repository.GameSessionRepository;
@@ -225,8 +226,10 @@ public class GameSessionService {
 	@Scheduled(fixedRate = 1000) // runs every second
 	public void cleanupExpiredGameSessions() {
 		LocalDateTime cutoff = LocalDateTime.now().minusMinutes(10);
-		List<GameSession> expiredSessions = gameSessionRepository.findByPlayer2IdIsNullAndCreatedAtBefore(cutoff);
-		expiredSessions.addAll(gameSessionRepository.findByConnectedAtBeforeAndStartedAtIsNull(LocalDateTime.now().minusMinutes(1).minusSeconds(30)));
+		LocalDateTime cutoff2 = LocalDateTime.now().minusMinutes(1).minusSeconds(30);
+		List<GameSession> expiredSessions = new ArrayList<GameSession>();
+		expiredSessions.addAll(gameSessionRepository.findByPlayer2IdIsNullAndCreatedAtBefore(cutoff));
+			expiredSessions.addAll(gameSessionRepository.findByConnectedAtBeforeAndStartedAtIsNull(cutoff2));
 
 		for (GameSession session : expiredSessions) {
 			log.info("Cleaning up expired game session with code {}", session.getGameCode());
