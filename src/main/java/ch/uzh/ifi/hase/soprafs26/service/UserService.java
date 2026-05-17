@@ -53,11 +53,14 @@ public class UserService {
 		newUser.setToken(UUID.randomUUID().toString());
 		newUser.setStatus(UserStatus.ONLINE);
 		newUser.setCreationDate(LocalDateTime.now());
-		if (newUser.getUsername() == null || newUser.getUsername().isBlank() || 
-			newUser.getPassword() == null || newUser.getPassword().isBlank()) {
-			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username and password must not be empty");
+		validateUsername(newUser.getUsername());
+		if (newUser.getPassword() == null || newUser.getPassword().isBlank()) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password is required");
 		}
-		checkIfUserExists(newUser);	
+		if (newUser.getPassword().length() > 50) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password must be at most 50 characters");
+		}
+		checkIfUserExists(newUser);
 		// saves the given entity but data is only persisted in the database once
 		// flush() is called
 		newUser = userRepository.save(newUser);
@@ -65,6 +68,26 @@ public class UserService {
 
 		log.debug("Created Information for User: {}", newUser);
 		return newUser;
+	}
+
+	/**
+	 * Validates the username against the registration rules: it must be
+	 * present, free of spaces, and at most 20 characters long. Throws a
+	 * 400 BAD_REQUEST with a rule-specific message on the first violation.
+	 *
+	 * @param username the raw username supplied by the client
+	 * @throws org.springframework.web.server.ResponseStatusException
+	 */
+	private void validateUsername(String username) {
+		if (username == null || username.isBlank()) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username is required");
+		}
+		if (username.matches(".*\\s.*")) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username cannot contain spaces");
+		}
+		if (username.length() > 20) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Username must be at most 20 characters");
+		}
 	}
 
 	/**
@@ -80,9 +103,8 @@ public class UserService {
 	private void checkIfUserExists(User userToBeCreated) {
 		User userByUsername = userRepository.findByUsername(userToBeCreated.getUsername());
 
-		String baseErrorMessage = "The %s provided %s not unique. Therefore, the user could not be created!";
 		if (userByUsername != null) {
-			throw new ResponseStatusException(HttpStatus.CONFLICT, String.format(baseErrorMessage, "username", "is"));
+			throw new ResponseStatusException(HttpStatus.CONFLICT, "Username already taken");
 		}
 	}
 

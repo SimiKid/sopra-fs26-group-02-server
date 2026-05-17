@@ -10,6 +10,7 @@ import ch.uzh.ifi.hase.soprafs26.rest.mapper.DTOMapper;
 import ch.uzh.ifi.hase.soprafs26.service.GameSessionService;
 import ch.uzh.ifi.hase.soprafs26.service.AuthenticationService;
 
+import java.time.LocalDateTime;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -70,6 +71,19 @@ public class GameSessionController {
         return DTOMapper.INSTANCE.convertEntityToGameSessionGetDTO(gameSession);
     }
 
+    @GetMapping("/{gameCode}/expiration-time")
+    @ResponseStatus(HttpStatus.OK)
+    @ResponseBody
+    @Operation(summary = "Get the expiration time of a game session", description = "Retrieves the expiration time of a game session")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Expiration time returned"),
+        @ApiResponse(responseCode = "404", description = "Game session not found")
+    })
+    public long getRemainingMS(@Parameter(description = "The unique game code") @PathVariable("gameCode") String gameCode) {
+        return gameSessionService.getRemainingMS(gameCode);
+    }
+
+
     @PostMapping("/games/{gameCode}/join")
     @ResponseStatus(HttpStatus.OK)
     @ResponseBody
@@ -109,6 +123,32 @@ public class GameSessionController {
     })
     public long getBattleCount() {
         return gameSessionService.getBattleCount();
+    }
+
+    @DeleteMapping("/games/{gameCode}/leave")
+    @ResponseStatus(HttpStatus.OK)
+    @Operation(summary = "Leave a game session", description = "Leaves the game session with the given game code")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully left the game session"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing token"),
+        @ApiResponse(responseCode = "404", description = "Game session not found")
+    })
+    public void leaveGameSession(
+        @Parameter(description = "The unique game code") @PathVariable("gameCode") String gameCode, @RequestHeader("Authorization") String token) {
+        gameSessionService.leaveGameSession(gameCode, token);
+    }
+
+
+    @GetMapping("/games/{gameCode}/status")
+    @ResponseStatus(HttpStatus.OK)
+    @Operation(summary = "Get the status of a player in a game session", description = "Retrieves the status of a player in a game session")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Status returned"),
+        @ApiResponse(responseCode = "401", description = "Unauthorized - invalid or missing token"),
+        @ApiResponse(responseCode = "404", description = "Game session not found")
+    })
+    public boolean getGameStatusandgiveMessage(@Parameter(description = "The unique game code") @PathVariable("gameCode") String gameCode, @RequestHeader("Authorization") String token) {
+        return gameSessionService.getPlayerStatusandgiveMessage(gameCode, token);
     }
 }
 	

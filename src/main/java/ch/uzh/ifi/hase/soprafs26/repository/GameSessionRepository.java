@@ -14,6 +14,7 @@ public interface GameSessionRepository extends JpaRepository<GameSession, Long> 
     GameSession findByGameCode(String code);
     boolean existsByGameCode(String gameCode);
     List<GameSession> findByPlayer2IdIsNullAndCreatedAtBefore(LocalDateTime cutoff);
+    List<GameSession> findByConnectedAtBeforeAndStartedAtIsNull(LocalDateTime cutoff);
 
     @Query("SELECT g FROM GameSession g WHERE (g.player1Id = :userId OR g.player2Id = :userId) "
          + "AND g.gameStatus = ch.uzh.ifi.hase.soprafs26.constant.GameStatus.FINISHED "

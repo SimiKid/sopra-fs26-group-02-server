@@ -11,6 +11,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import java.util.Optional;
 import java.util.Random;
+import java.time.Duration;
+import java.util.ArrayList;
 
 import ch.uzh.ifi.hase.soprafs26.entity.GameSession;
 import ch.uzh.ifi.hase.soprafs26.repository.GameSessionRepository;
@@ -115,6 +117,7 @@ public class GameSessionService {
 					user2.setCurrentGameSessionId(saved.getId());
 					userRepository.save(user2);
 					saved.setGameStatus(GameStatus.CONFIGURING);
+					saved.setConnectedAt(LocalDateTime.now());
 					gameSessionRepository.save(saved);
 
 				}
@@ -169,6 +172,7 @@ public class GameSessionService {
 
 		gameSession.setPlayer2Id(player2Id);
 		gameSession.setGameStatus(GameStatus.CONFIGURING);
+		gameSession.setConnectedAt(LocalDateTime.now());
 
 		gameSession = gameSessionRepository.save(gameSession);
 		gameSessionRepository.flush();
@@ -209,23 +213,43 @@ public class GameSessionService {
 		gameSessionRepository.delete(gameSession);
 	}
 
+
+	public long getRemainingMS(String gameCode) {
+		GameSession gameSession = getByGameCode(gameCode);
+		long remainingMS = Duration.between(LocalDateTime.now(), gameSession.getConnectedAt().plusMinutes(1).plusSeconds(30)).toMillis();
+		return Math.max(0, remainingMS);
+	}
+	
+
 	// This method schedules a cleanup of game sessions that are still waiting for a second player after 10 minutes.
 	// It finds all game sessions where player2Id is null and createdAt is more than 10 minutes ago, and deletes them from the repository.
-	@Scheduled(fixedRate = 60000) // runs every minute
+	@Scheduled(fixedRate = 1000) // runs every second
 	public void cleanupExpiredGameSessions() {
 		LocalDateTime cutoff = LocalDateTime.now().minusMinutes(10);
-		List<GameSession> expiredSessions = gameSessionRepository.findByPlayer2IdIsNullAndCreatedAtBefore(cutoff);
+		LocalDateTime cutoff2 = LocalDateTime.now().minusMinutes(1).minusSeconds(30);
+		List<GameSession> expiredSessions = new ArrayList<GameSession>();
+		expiredSessions.addAll(gameSessionRepository.findByPlayer2IdIsNullAndCreatedAtBefore(cutoff));
+		expiredSessions.addAll(gameSessionRepository.findByConnectedAtBeforeAndStartedAtIsNull(cutoff2));
+
 		for (GameSession session : expiredSessions) {
 			log.info("Cleaning up expired game session with code {}", session.getGameCode());
 			
 				userRepository.findById(session.getPlayer1Id()).ifPresent(user -> {
 				nullifyGameSessionId(user.getId());
+				userRepository.findById(session.getPlayer2Id()).ifPresent(user2 -> {
+					nullifyGameSessionId(user2.getId());
+				});
+				playerRepository.findByGameSessionId(session.getId()).forEach(player -> {
+					playerRepository.delete(player);
+				});
+				
 			});
 			
 			gameSessionRepository.delete(session);
 		}
 		
 	}
+
 
 	public Player saveWizardClass(String gameCode, String token, String wizardClassName) {
 		GameSession gameSession = getByGameCode(gameCode);
@@ -288,5 +312,90 @@ public class GameSessionService {
 
 	public long getBattleCount() {
     	return gameSessionRepository.countStartedBattles();
+	}
+
+	public void leaveGameSession(String gameCode, String token) {
+		GameSession session = getByGameCode(gameCode);
+		if (session.getGameStatus().equals(GameStatus.CONFIGURING)) {
+			leaveinConfiguring(gameCode, token);
+		}
+		else if (session.getGameStatus().equals(GameStatus.BATTLE)) {
+			leaveinBattle(gameCode, token);
+		}
+		else {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Game is not in configuration or battle phase.");
+		}
+	}
+
+	private void leaveinConfiguring(String gameCode, String token) {
+		GameSession session = getByGameCode(gameCode);
+		User user=userRepository.findByToken(token);
+		Long userId = user.getId();
+		if (!userId.equals(session.getPlayer1Id()) && !userId.equals(session.getPlayer2Id())) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not part of this game session.");
+		}
+		userRepository.findById(session.getPlayer1Id()).ifPresent(user1 -> {
+			nullifyGameSessionId(user1.getId());
+		});
+		userRepository.findById(session.getPlayer2Id()).ifPresent(user2 -> {
+				nullifyGameSessionId(user2.getId());
+			});
+		playerRepository.findByGameSessionId(session.getId()).forEach(player -> {
+				playerRepository.delete(player);
+			});
+
+		gameSessionRepository.delete(session);
+		simpleMessagingTemplate.convertAndSend("/topic/game/" + gameCode + "/player-left", "PLAYER_LEFT");
+	}
+
+	private void leaveinBattle(String gameCode, String token) {
+		GameSession session = getByGameCode(gameCode);
+		User user1 = userRepository.findById(session.getPlayer1Id())
+			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+		User user2 = userRepository.findById(session.getPlayer2Id())
+			.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+		User loserUser=null;
+		User winnerUser=null;
+		if (user1.getToken().equals(token)) {
+			loserUser=user1;
+			winnerUser=user2;
+		}
+		else if (user2.getToken().equals(token)) {
+			loserUser=user2;
+			winnerUser=user1;
+		}
+		else {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not part of this game session.");
+		}
+		session.setWinnerId(winnerUser.getId());
+		//set stats in user table loser
+		loserUser.setTotalGames(loserUser.getTotalGames() + 1);
+		loserUser.setLosses(loserUser.getLosses() + 1);
+		loserUser.setWinRate((float) loserUser.getWins() / loserUser.getTotalGames());
+		loserUser.setCurrentGameSessionId(null);
+		//set stats in user table winner
+		winnerUser.setWins(winnerUser.getWins() + 1);
+		winnerUser.setTotalGames(winnerUser.getTotalGames() + 1);
+		winnerUser.setWinRate((float) winnerUser.getWins() / winnerUser.getTotalGames());
+		winnerUser.setCurrentGameSessionId(null);
+		userRepository.save(loserUser);
+		userRepository.save(winnerUser);
+		session.setGameStatus(GameStatus.FINISHED);
+					
+		//websocket message
+		simpleMessagingTemplate.convertAndSend("/topic/game/" + gameCode + "/battle-ended", "PLAYER_LEFT_IN_BATTLE");
+	}
+
+	public boolean getPlayerStatusandgiveMessage(String gameCode, String token) {
+		GameSession session = getByGameCode(gameCode);
+		User user=userRepository.findByToken(token);
+		Long userId = user.getId();
+		Long gameSessionId = session.getId();
+		Player player = playerRepository.findByUserIdAndGameSessionId(userId, gameSessionId);
+		if (player == null) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "User is not part of this game session.");
+		}
+		simpleMessagingTemplate.convertAndSend("/topic/game/" + gameCode + "/player-status", "TIME_EXPIRED");
+		return player.isReady();
 	}
 }

@@ -7,6 +7,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 import ch.uzh.ifi.hase.soprafs26.constant.GameResult;
@@ -90,12 +91,77 @@ public class UserServiceTest {
 	}
 
 	@Test
-	public void createUser_blankInputs_throwsException() {
-		// given -> a first user has already been created
+	public void createUser_emptyUsername_throwsBadRequest() {
 		testUser.setUsername("");
 
-		// then
-		assertThrows(ResponseStatusException.class, () -> userService.createUser(testUser));
+		ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+			() -> userService.createUser(testUser));
+
+		assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+		assertEquals("Username is required", ex.getReason());
+	}
+
+	@Test
+	public void createUser_usernameWithSpaces_throwsBadRequest() {
+		testUser.setUsername("abc def");
+
+		ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+			() -> userService.createUser(testUser));
+
+		assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+		assertEquals("Username cannot contain spaces", ex.getReason());
+	}
+
+	@Test
+	public void createUser_usernameTooLong_throwsBadRequest() {
+		testUser.setUsername("a".repeat(21));
+
+		ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+			() -> userService.createUser(testUser));
+
+		assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+		assertEquals("Username must be at most 20 characters", ex.getReason());
+	}
+
+	@Test
+	public void createUser_singleCharUsername_success() {
+		testUser.setUsername("a");
+
+		User createdUser = userService.createUser(testUser);
+
+		Mockito.verify(userRepository, Mockito.times(1)).save(Mockito.any());
+		assertNotNull(createdUser.getToken());
+	}
+
+	@Test
+	public void createUser_twentyCharUsername_success() {
+		testUser.setUsername("a".repeat(20));
+
+		User createdUser = userService.createUser(testUser);
+
+		Mockito.verify(userRepository, Mockito.times(1)).save(Mockito.any());
+		assertNotNull(createdUser.getToken());
+	}
+
+	@Test
+	public void createUser_passwordTooLong_throwsBadRequest() {
+		testUser.setPassword("a".repeat(51));
+
+		ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+			() -> userService.createUser(testUser));
+
+		assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+		assertEquals("Password must be at most 50 characters", ex.getReason());
+	}
+
+	@Test
+	public void createUser_fiftyCharPassword_success() {
+		testUser.setPassword("a".repeat(50));
+
+		User createdUser = userService.createUser(testUser);
+
+		Mockito.verify(userRepository, Mockito.times(1)).save(Mockito.any());
+		assertNotNull(createdUser.getToken());
 	}
 
 	@Test

@@ -325,4 +325,114 @@ public class GameSessionControllerTest {
             .andExpect(status().isOk())
             .andExpect(content().string("42"));
     }
+
+    @Test
+    void leaveGameSession_success_configuring_returnsOk() throws Exception {
+        // given
+        User user = new User();
+        user.setId(1L);
+        user.setToken("valid-token");
+
+        given(authenticationService.authenticateByToken("valid-token")).willReturn(user);
+        // leaveGameSession does not throw => success (should return 200 OK)
+        doNothing().when(gameSessionService).leaveGameSession("ABC123", "valid-token");
+
+        MockHttpServletRequestBuilder request = delete("/games/ABC123/leave")
+            .header("Authorization", "valid-token");
+
+        // when/then
+        mockMvc.perform(request)
+            .andExpect(status().isOk());
+    }
+
+    @Test
+    void leaveGameSession_gameNotFound_returnsNotFound() throws Exception {
+        // given
+        User user = new User();
+        user.setId(1L);
+        user.setToken("token1");
+
+        given(authenticationService.authenticateByToken("token1")).willReturn(user);
+        doThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"))
+            .when(gameSessionService).leaveGameSession("NOTEXIST", "token1");
+
+        MockHttpServletRequestBuilder request = delete("/games/NOTEXIST/leave")
+            .header("Authorization", "token1");
+
+        mockMvc.perform(request)
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void leaveGameSession_forbidden_returnsForbidden() throws Exception {
+        // given
+        User user = new User();
+        user.setId(1L);
+        user.setToken("token2");
+
+        given(authenticationService.authenticateByToken("token2")).willReturn(user);
+        doThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "Not allowed"))
+            .when(gameSessionService).leaveGameSession("ABC123", "token2");
+
+        MockHttpServletRequestBuilder request = delete("/games/ABC123/leave")
+            .header("Authorization", "token2");
+
+        mockMvc.perform(request)
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getPlayerStatusandgiveMessage_success_returnsTrueAndOk() throws Exception {
+        // given
+        User user = new User();
+        user.setId(11L);
+        user.setToken("token-test");
+
+        given(authenticationService.authenticateByToken("token-test")).willReturn(user);
+        given(gameSessionService.getPlayerStatusandgiveMessage("ABC123", "token-test"))
+            .willReturn(true);
+
+        MockHttpServletRequestBuilder request = get("/games/ABC123/status")
+            .header("Authorization", "token-test");
+
+        mockMvc.perform(request)
+            .andExpect(status().isOk())
+            .andExpect(content().string("true"));
+    }
+
+    @Test
+    void getPlayerStatusandgiveMessage_userNotInGame_returnsForbidden() throws Exception {
+        // given
+        User user = new User();
+        user.setId(22L);
+        user.setToken("no-game-token");
+
+        given(authenticationService.authenticateByToken("no-game-token")).willReturn(user);
+        given(gameSessionService.getPlayerStatusandgiveMessage("ABC123", "no-game-token"))
+            .willThrow(new ResponseStatusException(HttpStatus.FORBIDDEN, "User not in game"));
+
+        MockHttpServletRequestBuilder request = get("/games/ABC123/status")
+            .header("Authorization", "no-game-token");
+
+        mockMvc.perform(request)
+            .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getPlayerStatusandgiveMessage_gameNotFound_returnsNotFound() throws Exception {
+        // given
+        User user = new User();
+        user.setId(33L);
+        user.setToken("abc-token");
+
+        given(authenticationService.authenticateByToken("abc-token")).willReturn(user);
+        given(gameSessionService.getPlayerStatusandgiveMessage("NOTFND", "abc-token"))
+            .willThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Game not found"));
+
+        MockHttpServletRequestBuilder request = get("/games/NOTFND/status")
+            .header("Authorization", "abc-token");
+
+        mockMvc.perform(request)
+            .andExpect(status().isNotFound());
+    }
 }

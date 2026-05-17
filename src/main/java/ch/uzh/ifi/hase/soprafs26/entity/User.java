@@ -1,6 +1,7 @@
 package ch.uzh.ifi.hase.soprafs26.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Size;
 
 import ch.uzh.ifi.hase.soprafs26.constant.UserStatus;
 
@@ -31,6 +32,7 @@ public class User implements Serializable {
 	@Column(nullable = false, unique = true)
 	private String username;
 
+	@Size(max = 50)
 	@Column(nullable = false)
 	private String password;
 

@@ -40,6 +40,9 @@ public class GameSession implements Serializable {
 
     @Column(nullable = false)
     private LocalDateTime createdAt;
+    
+    @Column(nullable = true)
+    private LocalDateTime connectedAt;
 
     @Column(nullable = true)
     private LocalDateTime startedAt;
@@ -162,5 +165,12 @@ public class GameSession implements Serializable {
 
         public void setCurrentTurnNumber(Integer currentTurnNumber){
             this.currentTurnNumber = currentTurnNumber;
+        }
+        public LocalDateTime getConnectedAt(){
+            return connectedAt;
+        }
+
+        public void setConnectedAt(LocalDateTime connectedAt){
+            this.connectedAt = connectedAt;
         }
 }
