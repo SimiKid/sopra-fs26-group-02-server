@@ -125,7 +125,7 @@ public class GameSessionController {
         return gameSessionService.getBattleCount();
     }
 
-    @PostMapping("/games/{gameCode}/leave")
+    @DeleteMapping("/games/{gameCode}/leave")
     @ResponseStatus(HttpStatus.OK)
     @Operation(summary = "Leave a game session", description = "Leaves the game session with the given game code")
     @ApiResponses(value = {

@@ -379,4 +379,173 @@ class GameSessionServiceTest {
 
         assertEquals(42L, count);
 }
+    @Test
+    void leaveGameSession_configuring_phase_removesPlayersAndSession_andSendsMessage() {
+        // given
+        gameSession.setGameStatus(GameStatus.CONFIGURING);
+        gameSession.setPlayer1Id(user.getId());
+        gameSession.setPlayer2Id(null);
+        given(gameSessionRepository.findByGameCode("ABC123")).willReturn(gameSession);
+        given(userRepository.findByToken("valid-token")).willReturn(user);
+        given(userRepository.findById(user.getId())).willReturn(Optional.of(user));
+        given(playerRepository.findByGameSessionId(gameSession.getId())).willReturn(List.of(player));
+
+        // when
+        gameSessionService.leaveGameSession("ABC123", "valid-token");
+
+        // then
+        verify(userRepository, times(1)).save(any(User.class)); // user id nullified
+        verify(playerRepository, times(1)).delete(player);
+        verify(gameSessionRepository, times(1)).delete(gameSession);
+        verify(messagingTemplate, times(1)).convertAndSend("/topic/game/ABC123/player-left", "PLAYER_LEFT");
+    }
+
+    @Test
+    void leaveGameSession_battle_phase_updatesStatsAndStatus_andSendsBattleEnded() {
+        // given
+        User player1 = new User();
+        User player2 = new User();
+        player1.setId(1L);
+        player2.setId(2L);
+        player1.setToken("token1");
+        player2.setToken("token2");
+        player1.setWins(2);
+        player1.setTotalGames(4);
+        player1.setLosses(2);
+        player2.setWins(3);
+        player2.setTotalGames(5);
+        player2.setLosses(2);
+
+        GameSession session = new GameSession();
+        session.setId(99L);
+        session.setGameCode("CODE99");
+        session.setPlayer1Id(player1.getId());
+        session.setPlayer2Id(player2.getId());
+        session.setGameStatus(GameStatus.BATTLE);
+
+        given(gameSessionRepository.findByGameCode("CODE99")).willReturn(session);
+        given(userRepository.findById(player1.getId())).willReturn(Optional.of(player1));
+        given(userRepository.findById(player2.getId())).willReturn(Optional.of(player2));
+
+        // when player1 leaves
+        gameSessionService.leaveGameSession("CODE99", "token1");
+
+        // then
+        assertEquals(GameStatus.FINISHED, session.getGameStatus());
+        assertEquals(3, player1.getLosses());
+        assertEquals(5, player1.getTotalGames());
+        assertEquals(2, player1.getWins());
+        assertEquals(4, player2.getWins());
+        assertEquals(6, player2.getTotalGames());
+        // Check win rates have changed
+        assertEquals((float) player1.getWins() / player1.getTotalGames(), player1.getWinRate());
+        assertEquals((float) player2.getWins() / player2.getTotalGames(), player2.getWinRate());
+
+        verify(userRepository, times(1)).save(player1);
+        verify(userRepository, times(1)).save(player2);
+        verify(messagingTemplate, times(1)).convertAndSend("/topic/game/CODE99/battle-ended", "PLAYER_LEFT_IN_BATTLE");
+    }
+
+    @Test
+    void leaveGameSession_phaseNotAllowed_throwsForbidden() {
+        // given
+        gameSession.setGameStatus(GameStatus.FINISHED);
+        given(gameSessionRepository.findByGameCode("ABC123")).willReturn(gameSession);
+
+        // when/then
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () ->
+            gameSessionService.leaveGameSession("ABC123", "valid-token"));
+        assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
+    }
+
+    @Test
+    void leaveGameSession_userNotPartOfGame_throwsForbidden_inConfiguring() {
+        // given
+        gameSession.setGameStatus(GameStatus.CONFIGURING);
+        gameSession.setPlayer1Id(1L);
+        gameSession.setPlayer2Id(2L);
+        User nonparticipant = new User();
+        nonparticipant.setId(3L);
+        given(gameSessionRepository.findByGameCode("ABC123")).willReturn(gameSession);
+        given(userRepository.findByToken("non-token")).willReturn(nonparticipant);
+
+        // when/then
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () ->
+            gameSessionService.leaveGameSession("ABC123", "non-token"));
+        assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
+    }
+
+    @Test
+    void leaveGameSession_userNotPartOfGame_throwsForbidden_inBattle() {
+        // given
+        gameSession.setGameStatus(GameStatus.BATTLE);
+        gameSession.setPlayer1Id(1L);
+        gameSession.setPlayer2Id(2L);
+        gameSession.setId(21L);
+
+        User u1 = new User();
+        u1.setId(1L);
+        u1.setToken("token1");
+        User u2 = new User();
+        u2.setId(2L);
+        u2.setToken("token2");
+        User nonparticipant = new User();
+        nonparticipant.setId(3L);
+        nonparticipant.setToken("other-token");
+
+        given(gameSessionRepository.findByGameCode("ABC123")).willReturn(gameSession);
+        given(userRepository.findById(1L)).willReturn(Optional.of(u1));
+        given(userRepository.findById(2L)).willReturn(Optional.of(u2));
+
+        // when/then
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () ->
+            gameSessionService.leaveGameSession("ABC123", "other-token"));
+        assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
+    }
+    @Test
+    void getPlayerStatusandgiveMessage_returnsPlayerReadyStatus_andSendsMessage() {
+        // given
+        gameSession.setGameCode("ABC123");
+        gameSession.setId(101L);
+
+        User user = new User();
+        user.setId(11L);
+        user.setToken("token-test");
+        Player player = new Player();
+        player.setId(100L);
+        player.setUserId(11L);
+        player.setGameSessionId(101L);
+        player.setReady(true);
+
+        given(gameSessionRepository.findByGameCode("ABC123")).willReturn(gameSession);
+        given(userRepository.findByToken("token-test")).willReturn(user);
+        given(playerRepository.findByUserIdAndGameSessionId(11L, 101L)).willReturn(player);
+
+        // when
+        boolean result = gameSessionService.getPlayerStatusandgiveMessage("ABC123", "token-test");
+
+        // then
+        assertTrue(result);
+        verify(messagingTemplate).convertAndSend("/topic/game/ABC123/player-status", "TIME_EXPIRED");
+    }
+
+    @Test
+    void getPlayerStatusandgiveMessage_userNotPartOfGame_throwsForbidden() {
+        // given
+        gameSession.setGameCode("ABC123");
+        gameSession.setId(101L);
+        User user = new User();
+        user.setId(2L);
+        user.setToken("token2");
+
+        given(gameSessionRepository.findByGameCode("ABC123")).willReturn(gameSession);
+        given(userRepository.findByToken("token2")).willReturn(user);
+        given(playerRepository.findByUserIdAndGameSessionId(2L, 101L)).willReturn(null);
+
+        // when/then
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () ->
+            gameSessionService.getPlayerStatusandgiveMessage("ABC123", "token2"));
+        assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
+    }
+
 }

@@ -229,7 +229,7 @@ public class GameSessionService {
 		LocalDateTime cutoff2 = LocalDateTime.now().minusMinutes(1).minusSeconds(30);
 		List<GameSession> expiredSessions = new ArrayList<GameSession>();
 		expiredSessions.addAll(gameSessionRepository.findByPlayer2IdIsNullAndCreatedAtBefore(cutoff));
-			expiredSessions.addAll(gameSessionRepository.findByConnectedAtBeforeAndStartedAtIsNull(cutoff2));
+		expiredSessions.addAll(gameSessionRepository.findByConnectedAtBeforeAndStartedAtIsNull(cutoff2));
 
 		for (GameSession session : expiredSessions) {
 			log.info("Cleaning up expired game session with code {}", session.getGameCode());
@@ -372,15 +372,16 @@ public class GameSessionService {
 		loserUser.setTotalGames(loserUser.getTotalGames() + 1);
 		loserUser.setLosses(loserUser.getLosses() + 1);
 		loserUser.setWinRate((float) loserUser.getWins() / loserUser.getTotalGames());
+		loserUser.setCurrentGameSessionId(null);
 		//set stats in user table winner
 		winnerUser.setWins(winnerUser.getWins() + 1);
 		winnerUser.setTotalGames(winnerUser.getTotalGames() + 1);
 		winnerUser.setWinRate((float) winnerUser.getWins() / winnerUser.getTotalGames());
+		winnerUser.setCurrentGameSessionId(null);
 		userRepository.save(loserUser);
 		userRepository.save(winnerUser);
 		session.setGameStatus(GameStatus.FINISHED);
-		nullifyGameSessionId(loserUser.getId());
-		nullifyGameSessionId(winnerUser.getId());
+					
 		//websocket message
 		simpleMessagingTemplate.convertAndSend("/topic/game/" + gameCode + "/battle-ended", "PLAYER_LEFT_IN_BATTLE");
 	}
