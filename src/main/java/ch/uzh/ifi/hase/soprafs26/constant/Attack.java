@@ -9,11 +9,11 @@ public enum Attack {
     FIREBALL("Fireball", 30, Element.FIRE, "A classic explosive burst of flame."),
     INFERNO("Inferno", 30, Element.FIRE, "Overwhelming heat that scorches a wide area."),
     LIGHTNING("Lightning", 30, Element.STORM, "A fast bolt that shocks the target."),
-    TORNADO("Tornado", 30, Element.NEUTRAL, "Swirling winds that throw the enemy off balance."),
+    TSUNAMI("Tsunami", 30, Element.STORM, "A crushing wave that floods the battlefield."),
     BLIZZARD("Blizzard", 30, Element.ICE, "Freezing wind and hail that chip away defenses."),
-    PUNCH("Punch", 30, Element.NEUTRAL, "A simple but reliable melee strike."),
     ICE_SPIKES("Ice Spikes", 30, Element.ICE, "Sharp shards erupt from the ground."),
-    TSUNAMI("Tsunami", 30, Element.STORM, "A crushing wave that floods the battlefield.");
+    TORNADO("Tornado", 30, Element.NEUTRAL, "Swirling winds that throw the enemy off balance."),
+    PUNCH("Punch", 30, Element.NEUTRAL, "A simple but reliable melee strike.");
 
     private final String displayName;
     private final int baseDamage;
